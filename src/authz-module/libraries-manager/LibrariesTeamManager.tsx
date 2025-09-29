@@ -4,12 +4,15 @@ import { useLibrary } from '@src/authz-module/data/hooks';
 import TeamTable from './components/TeamTable';
 import AuthZLayout from '../components/AuthZLayout';
 import { LibraryAuthZProvider, useLibraryAuthZ } from './context';
+import { AddNewTeamMemberTrigger } from './components/AddNewTeamMemberModal';
 
 import messages from './messages';
+import { useLocation } from 'react-router-dom';
 
 const LibrariesAuthZTeamView = () => {
   const intl = useIntl();
-  const { libraryId } = useLibraryAuthZ();
+  const location = useLocation();
+  const hash = location.hash; const { libraryId, canManageTeam } = useLibraryAuthZ();
   const { data: library } = useLibrary(libraryId);
   const rootBradecrumb = intl.formatMessage(messages['library.authz.breadcrumb.root']) || '';
   const pageTitle = intl.formatMessage(messages['library.authz.manage.page.title']);
@@ -21,11 +24,15 @@ const LibrariesAuthZTeamView = () => {
         activeLabel={pageTitle}
         pageTitle={pageTitle}
         pageSubtitle={libraryId}
-        actions={[]}
+        actions={
+          canManageTeam
+            ? [<AddNewTeamMemberTrigger libraryId={libraryId} />]
+            : []
+        }
       >
         <Tabs
           variant="tabs"
-          defaultActiveKey="team"
+          defaultActiveKey={ hash ? 'permissions' : 'team'}
           className="bg-light-100 px-5"
         >
           <Tab eventKey="team" title={intl.formatMessage(messages['library.authz.tabs.team'])} className="p-5">
@@ -34,7 +41,7 @@ const LibrariesAuthZTeamView = () => {
           <Tab eventKey="roles" title={intl.formatMessage(messages['library.authz.tabs.roles'])}>
             Role tab.
           </Tab>
-          <Tab eventKey="permissions" title={intl.formatMessage(messages['library.authz.tabs.permissions'])}>
+          <Tab id="libraries-permissions-tab" eventKey="permissions" title={intl.formatMessage(messages['library.authz.tabs.permissions'])}>
             Permissions tab.
           </Tab>
         </Tabs>
