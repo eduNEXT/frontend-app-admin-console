@@ -1,4 +1,4 @@
-import { fireEvent, screen } from '@testing-library/react';
+import { fireEvent, screen, within } from '@testing-library/react';
 import { renderWrapper } from '@src/setupTest';
 import { initializeMockApp } from '@edx/frontend-platform/testing';
 import { useLibrary } from '@src/authz-module/data/hooks';
@@ -31,11 +31,15 @@ jest.mock('./components/AddNewTeamMemberTrigger', () => ({
 
 jest.mock('../components/RoleCard', () => ({
   __esModule: true,
-  default: ({ title, description, permissions }: { title: string, description: string, permissions: any[] }) => (
+  default: ({ title, description, permissionsByResource }: {
+    title: string,
+    description: string,
+    permissionsByResource: any[]
+  }) => (
     <div data-testid="role-card">
       <div>{title}</div>
       <div>{description}</div>
-      <div>{permissions.length} permissions</div>
+      <div>{permissionsByResource.length} permissions</div>
     </div>
   ),
 }));
@@ -62,9 +66,9 @@ describe('LibrariesTeamManager', () => {
       ],
       permissions: [
         { key: 'view_library', label: 'view', resource: 'library' },
-        { key: 'edit_library', name: 'edit', resource: 'library' },
+        { key: 'edit_library', label: 'edit', resource: 'library' },
       ],
-      resources: [{ key: 'library', displayName: 'Library' }],
+      resources: [{ key: 'library', label: 'Library' }],
       canManageTeam: true,
     });
 
@@ -103,10 +107,26 @@ describe('LibrariesTeamManager', () => {
     fireEvent.click(rolesTab);
 
     const roleCards = await screen.findAllByTestId('role-card');
-
-    expect(roleCards.length).toBeGreaterThan(0);
-    expect(screen.getByText('Instructor')).toBeInTheDocument();
+    const rolesScope = within(roleCards[0]);
+    expect(roleCards.length).toBe(1);
+    expect(rolesScope.getByText('Instructor')).toBeInTheDocument();
     expect(screen.getByText(/Can manage content/i)).toBeInTheDocument();
     expect(screen.getByText(/1 permissions/i)).toBeInTheDocument();
+  });
+
+  it('renders role matrix when "Permissions" tab is selected', async () => {
+    renderWrapper(<LibrariesTeamManager />);
+
+    // Click on "Permissions" tab
+    const permissionsTab = await screen.findByRole('tab', { name: /permissions/i });
+    fireEvent.click(permissionsTab);
+
+    const permissionsMatrix = await screen.findByTestId('permissions-matrix');
+    const metrixScope = within(permissionsMatrix);
+
+    expect(metrixScope.getByText('Instructor')).toBeInTheDocument();
+    expect(metrixScope.getByText('Library')).toBeInTheDocument();
+    expect(metrixScope.getByText('edit')).toBeInTheDocument();
+    expect(metrixScope.getByText('view')).toBeInTheDocument();
   });
 });
