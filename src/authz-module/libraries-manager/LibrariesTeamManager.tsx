@@ -3,13 +3,13 @@ import { Tab, Tabs } from '@openedx/paragon';
 import { useLibrary } from '@src/authz-module/data/hooks';
 import TeamTable from './components/TeamTable';
 import AuthZLayout from '../components/AuthZLayout';
-import { LibraryAuthZProvider, useLibraryAuthZ } from './context';
 import { AddNewTeamMemberTrigger } from './components/AddNewTeamMemberModal';
+import { useLibraryAuthZ } from './context';
 
 import messages from './messages';
 import { useLocation } from 'react-router-dom';
 
-const LibrariesAuthZTeamView = () => {
+const LibrariesTeamManager = () => {
   const intl = useIntl();
   const location = useLocation();
   const hash = location.hash; const { libraryId, canManageTeam } = useLibraryAuthZ();
@@ -49,10 +49,5 @@ const LibrariesAuthZTeamView = () => {
     </div>
   );
 };
-const LibrariesTeamManager = () => (
-  <LibraryAuthZProvider>
-    <LibrariesAuthZTeamView />
-  </LibraryAuthZProvider>
-);
 
 export default LibrariesTeamManager;
