@@ -1,12 +1,19 @@
+import { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
+import debounce from 'lodash.debounce';
 import { useIntl } from '@edx/frontend-platform/i18n';
 import {
   DataTable, Button, Chip, Skeleton,
+  TextFilter,
+  CheckboxFilter,
+  TableFooter,
 } from '@openedx/paragon';
 import { Edit } from '@openedx/paragon/icons';
 import { TableCellValue, TeamMember } from '@src/types';
 import { useTeamMembers } from '@src/authz-module/data/hooks';
-import { useLibraryAuthZ } from '../context';
+import { useLibraryAuthZ } from '@src/authz-module/libraries-manager/context';
+import { useQuerySettings } from './hooks/useQuerySettings';
+import TableControlBar from './components/TableControlBar';
 import messages from './messages';
 
 const SKELETON_ROWS = Array.from({ length: 10 }).map(() => ({
@@ -15,6 +22,8 @@ const SKELETON_ROWS = Array.from({ length: 10 }).map(() => ({
   email: '',
   roles: [],
 }));
+
+const DEFAULT_PAGE_SIZE = 10;
 
 type CellProps = TableCellValue<TeamMember>;
 
@@ -53,22 +62,47 @@ const RolesCell = ({ row }: CellProps) => (row.original.username === SKELETON_RO
 
 const TeamTable = () => {
   const intl = useIntl();
-  const { libraryId, canManageTeam, username } = useLibraryAuthZ();
+
+  const { querySettings, handleTableFetch } = useQuerySettings();
+
+  const {
+    libraryId, canManageTeam, username, roles,
+  } = useLibraryAuthZ();
 
   // TODO: Display error in the notification system
   const {
     data: teamMembers, isLoading, isError,
-  } = useTeamMembers(libraryId);
+  } = useTeamMembers(libraryId, querySettings);
 
-  const rows = isError ? [] : (teamMembers || SKELETON_ROWS);
+  const rows = isError ? [] : (teamMembers?.results || SKELETON_ROWS);
+  const pageCount = teamMembers?.count ? Math.ceil(teamMembers.count / DEFAULT_PAGE_SIZE) : 1;
 
   const navigate = useNavigate();
 
+  const adaptedFilterChoices = useMemo(
+    () => roles.map((role) => ({
+      name: role.name,
+      number: role.userCount,
+      value: role.role,
+    })),
+    [roles],
+  );
+
   return (
     <DataTable
+      isFilterable
       isPaginated
+      isSortable
+      manualFilters
+      manualPagination
+      manualSortBy
+      defaultColumnValues={{ Filter: TextFilter }}
+      numBreakoutFilters={3}
+      fetchData={debounce(handleTableFetch, 1000)}
       data={rows}
-      itemCount={rows?.length}
+      itemCount={teamMembers?.count || 0}
+      pageCount={pageCount}
+      initialState={{ pageSize: DEFAULT_PAGE_SIZE }}
       additionalColumns={[
         {
           id: 'action',
@@ -88,29 +122,37 @@ const TeamTable = () => {
             ) : null),
         },
       ]}
-      initialState={{
-        pageSize: 10,
-      }}
       columns={
         [
           {
             Header: intl.formatMessage(messages['library.authz.team.table.username']),
             accessor: 'username',
             Cell: NameCell,
+            disableSortBy: true,
           },
           {
             Header: intl.formatMessage(messages['library.authz.team.table.email']),
             accessor: 'email',
             Cell: EmailCell,
+            disableFilters: true,
+            disableSortBy: true,
           },
           {
             Header: intl.formatMessage(messages['library.authz.team.table.roles']),
             accessor: 'roles',
             Cell: RolesCell,
+            Filter: CheckboxFilter,
+            filter: 'includesValue',
+            filterChoices: Object.values(adaptedFilterChoices),
+            disableSortBy: true,
           },
         ]
       }
-    />
+    >
+      <TableControlBar />
+      <DataTable.Table />
+      <TableFooter />
+    </DataTable>
   );
 };
 

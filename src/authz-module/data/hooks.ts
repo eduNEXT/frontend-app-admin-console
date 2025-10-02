@@ -2,16 +2,18 @@ import {
   useMutation, useQuery, useQueryClient, useSuspenseQuery,
 } from '@tanstack/react-query';
 import { appId } from '@src/constants';
-import { LibraryMetadata, TeamMember } from '@src/types';
+import { LibraryMetadata } from '@src/types';
 import {
   assignTeamMembersRole,
   AssignTeamMembersRoleRequest,
-  getLibrary, getPermissionsByRole, getTeamMembers, PermissionsByRole,
+  getLibrary, getPermissionsByRole, getTeamMembers, PermissionsByRole, QuerySettings, GetTeamMembersResponse
 } from './api';
 
 const authzQueryKeys = {
   all: [appId, 'authz'] as const,
-  teamMembers: (object: string) => [...authzQueryKeys.all, 'teamMembers', object] as const,
+  teamMembersAll: (scope: string) => [...authzQueryKeys.all, 'teamMembers', scope] as const,
+  teamMembers: (scope: string, querySettings?: QuerySettings) => [
+    ...authzQueryKeys.teamMembersAll(scope), querySettings] as const,
   permissionsByRole: (scope: string) => [...authzQueryKeys.all, 'permissionsByRole', scope] as const,
   library: (libraryId: string) => [...authzQueryKeys.all, 'library', libraryId] as const,
 };
@@ -20,17 +22,19 @@ const authzQueryKeys = {
  * React Query hook to fetch all team members for a specific object/scope.
  * It retrieves the full list of members who have access to the given scope.
  *
- * @param object - The unique identifier of the object/scope
+ * @param scope - The unique identifier of the object/scope
+ * @param querySettings - Optional query parameters for filtering, sorting, and pagination
  *
  * @example
  * ```tsx
- * const { data: teamMembers, isLoading, isError } = useTeamMembers('lib:123');
+ * const { data: teamMembers, isLoading, isError } = useTeamMembers('lib:123', querySettings);
  * ```
  */
-export const useTeamMembers = (object: string) => useQuery<TeamMember[], Error>({
-  queryKey: authzQueryKeys.teamMembers(object),
-  queryFn: () => getTeamMembers(object),
+export const useTeamMembers = (scope: string, querySettings: QuerySettings) => useQuery<GetTeamMembersResponse, Error>({
+  queryKey: authzQueryKeys.teamMembers(scope, querySettings),
+  queryFn: () => getTeamMembers(scope, querySettings),
   staleTime: 1000 * 60 * 30, // refetch after 30 minutes
+  refetchOnWindowFocus: false,
 });
 
 /**

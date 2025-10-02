@@ -55,7 +55,37 @@ const messages = defineMessages({
     id: 'libraries.authz.manage.assign.role.success',
     defaultMessage: 'Role added successfully.',
     description: 'Libraries AuthZ assign role success message',
-  },
+    'authz.libraries.team.table.search': {
+      id: 'authz.libraries.team.table.search',
+      defaultMessage: 'Search by {firstField} or {secondField}',
+      description: 'Search placeholder for two specific fields',
+    },
+    'authz.libraries.team.table.sort.name-a-z': {
+      id: 'authz.libraries.team.table.sort.name-a-z',
+      defaultMessage: 'Name A-Z',
+      description: 'Sort by name A-Z',
+    },
+    'authz.libraries.team.table.sort.name-z-a': {
+      id: 'authz.libraries.team.table.sort.name-z-a',
+      defaultMessage: 'Name Z-A',
+      description: 'Sort by name Z-A',
+    },
+    'authz.libraries.team.table.sort.newest': {
+      id: 'authz.libraries.team.table.sort.newest',
+      defaultMessage: 'Newest',
+      description: 'Sort by newest',
+    },
+    'authz.libraries.team.table.sort.oldest': {
+      id: 'authz.libraries.team.table.sort.oldest',
+      defaultMessage: 'Oldest',
+      description: 'Sort by oldest',
+    },
+    'authz.libraries.team.table.clearFilters': {
+      id: 'authz.libraries.team.table.clearFilters',
+      defaultMessage: 'Clear filters',
+      description: 'Button to clear all active filters in the table',
+    },
+  }
 });
 
 export default messages;

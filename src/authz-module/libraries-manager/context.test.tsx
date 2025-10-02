@@ -1,4 +1,5 @@
-import { screen } from '@testing-library/react';
+import { Component, ReactNode } from 'react';
+import { screen, renderHook } from '@testing-library/react';
 import { useParams } from 'react-router-dom';
 import { useValidateUserPermissions } from '@src/data/hooks';
 import { renderWrapper } from '@src/setupTest';
@@ -17,22 +18,30 @@ jest.mock('@src/authz-module/data/hooks', () => ({
     data: [
       {
         role: 'library_author',
-        permissions: [
-          'view_library_team',
-          'edit_library',
-        ],
+        permissions: ['view_library_team', 'edit_library'],
         user_count: 12,
       },
     ],
   }),
 }));
 
-jest.mock('../data/hooks', () => ({
-  useTeamRoles: jest.fn(),
-}));
+class ErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean; error?: Error }> {
+  constructor(props: { children: ReactNode }) {
+    super(props);
+    this.state = { hasError: false };
+  }
 
-// Get the mocked function
-const { useTeamRoles } = jest.requireMock('../data/hooks');
+  static getDerivedStateFromError(error: Error) {
+    return { hasError: true, error };
+  }
+
+  render() {
+    if (this.state.hasError && this.state.error) {
+      throw this.state.error;
+    }
+    return this.props.children;
+  }
+}
 
 const TestComponent = () => {
   const context = useLibraryAuthZ();
@@ -42,7 +51,9 @@ const TestComponent = () => {
       <div data-testid="libraryId">{context.libraryId}</div>
       <div data-testid="canManageTeam">{context.canManageTeam ? 'true' : 'false'}</div>
       <div data-testid="roles">{Array.isArray(context.roles) ? context.roles.length : 'undefined'}</div>
-      <div data-testid="permissions">{Array.isArray(context.permissions) ? context.permissions.length : 'undefined'}</div>
+      <div data-testid="permissions">
+        {Array.isArray(context.permissions) ? context.permissions.length : 'undefined'}
+      </div>
       <div data-testid="resources">{Array.isArray(context.resources) ? context.resources.length : 'undefined'}</div>
     </div>
   );
@@ -52,7 +63,7 @@ describe('LibraryAuthZProvider', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     (useParams as jest.Mock).mockReturnValue({ libraryId: 'lib123' });
-    (useTeamRoles as jest.Mock).mockReturnValue({
+    (usePermissionsByRole as jest.Mock).mockReturnValue({
       data: [
         {
           role: 'instructor',
@@ -143,21 +154,18 @@ describe('LibraryAuthZProvider', () => {
 
     expect(() => {
       renderWrapper(
-        <LibraryAuthZProvider>
-          <TestComponent />
-        </LibraryAuthZProvider>,
+        <ErrorBoundary>
+          <LibraryAuthZProvider>
+            <TestComponent />
+          </LibraryAuthZProvider>
+        </ErrorBoundary>,
       );
     }).toThrow('MissingLibrary');
   });
 
   it('throws error when useLibraryAuthZ is used outside provider', () => {
-    const BrokenComponent = () => {
-      useLibraryAuthZ();
-      return null;
-    };
-
     expect(() => {
-      renderWrapper(<BrokenComponent />);
+      renderHook(() => useLibraryAuthZ());
     }).toThrow('useLibraryAuthZ must be used within an LibraryAuthZProvider');
   });
 });
