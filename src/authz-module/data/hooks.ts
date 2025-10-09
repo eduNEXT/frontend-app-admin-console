@@ -6,8 +6,9 @@ import { LibraryMetadata } from '@src/types';
 import {
   assignTeamMembersRole,
   AssignTeamMembersRoleRequest,
-  getLibrary, getPermissionsByRole, getTeamMembers, PermissionsByRole, QuerySettings, GetTeamMembersResponse
-} from './api';
+  getLibrary, getPermissionsByRole, getTeamMembers, PermissionsByRole, QuerySettings, GetTeamMembersResponse,
+    revokeUserRoles,
+  RevokeUserRolesRequest, } from './api'
 
 const authzQueryKeys = {
   all: [appId, 'authz'] as const,
@@ -85,6 +86,18 @@ export const useAssignTeamMembersRole = () => {
     }) => assignTeamMembersRole(data),
     onSettled: (_data, _error, { data: { scope } }) => {
       queryClient.invalidateQueries({ queryKey: authzQueryKeys.teamMembersAll(scope) });
+    },
+  });
+};
+
+export const useRevokeUserRoles = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ data }: {
+      data: RevokeUserRolesRequest
+    }) => revokeUserRoles(data),
+    onSettled: (_data, _error, { data: { scope } }) => {
+      queryClient.invalidateQueries({ queryKey: authzQueryKeys.teamMembers(scope) });
     },
   });
 };
