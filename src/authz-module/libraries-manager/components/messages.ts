@@ -41,11 +41,6 @@ const messages = defineMessages({
     defaultMessage: 'Saving...',
     description: 'Libraries AuthZ saving button title',
   },
-  'libraries.authz.manage.save.button': {
-    id: 'libraries.authz.manage.save.button',
-    defaultMessage: 'Save',
-    description: 'Libraries AuthZ save button title',
-  },
   'library.authz.team.remove.user.toast.success.description': {
     id: 'library.authz.team.remove.user.toast.success.description',
     defaultMessage: 'The {role} role has been successfully removed.{rolesCount, plural, =0 { The user no longer has access to this library and has been removed from the member list.} other {}}',
