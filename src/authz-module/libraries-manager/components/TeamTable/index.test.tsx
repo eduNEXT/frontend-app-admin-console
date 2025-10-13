@@ -41,9 +41,36 @@ describe('TeamTable', () => {
     canManageTeam: true,
     username: 'alice',
     roles: [
-      { name: 'Admin', role: 'admin', userCount: 1 },
-      { name: 'Editor', role: 'editor', userCount: 1 },
-      { name: 'Viewer', role: 'viewer', userCount: 1 },
+      {
+        role: 'admin',
+        permissions: [
+          'delete_library',
+          'publish_library',
+          'manage_library_team',
+        ],
+        userCount: 3,
+        name: 'Admin',
+        description: 'The Admin role',
+      },
+      {
+        role: 'editor',
+        permissions: [
+          'edit_library',
+          'publish_library',
+        ],
+        userCount: 3,
+        name: 'Editor',
+        description: 'The Editor role',
+      },
+      {
+        role: 'viewer',
+        permissions: [
+          'view_library',
+        ],
+        userCount: 3,
+        name: 'Viewer',
+        description: 'The Viewer role',
+      },
     ],
   };
 
