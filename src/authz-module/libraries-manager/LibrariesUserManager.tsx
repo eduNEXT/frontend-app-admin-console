@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useIntl } from '@edx/frontend-platform/i18n';
-import { Container } from '@openedx/paragon';
+import { Container, Skeleton } from '@openedx/paragon';
 import { ROUTES } from '@src/authz-module/constants';
 import { Role } from 'types';
 import { useToastManager } from 'authz-module/libraries-manager/ToastManagerContext';
@@ -141,7 +141,8 @@ const LibrariesUserManager = () => {
           : []}
       >
         <Container className="bg-light-200 p-5">
-          {userRoles && userRoles.map(role => (
+          {!userRoles ? <Skeleton count={2} height={200} /> :
+           userRoles.map(role => (
             <RoleCard
               key={`${role.role}-${user?.username}`}
               title={role.name}
