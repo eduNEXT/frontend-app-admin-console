@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useLocation, useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { useIntl } from '@edx/frontend-platform/i18n';
 import { Container } from '@openedx/paragon';
 import { ROUTES } from '@src/authz-module/constants';
@@ -16,24 +16,36 @@ import ConfirmDeletionModal from './components/ConfirmDeletionModal';
 
 const LibrariesUserManager = () => {
   const intl = useIntl();
- // const { username } = useParams();
- const location = useLocation();
-  const navigate = useNavigate();
   const { username } = useParams();
+  const navigate = useNavigate();
   const {
     libraryId, permissions, roles, resources, canManageTeam,
   } = useLibraryAuthZ();
+  const teamMembersPath = `/authz/${ROUTES.LIBRARIES_TEAM_PATH.replace(':libraryId', libraryId)}`;
+
+  useEffect(() => {
+    if (!canManageTeam) {
+      navigate(teamMembersPath);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [canManageTeam]);
+
+  const querySettings = {
+    order: null,
+    pageIndex: 0,
+    pageSize: 10,
+    roles: null,
+    search: username || null,
+    sortBy: null,
+  };
+
   const { data: library } = useLibrary(libraryId);
   const { mutate: revokeUserRoles, isPending: isRevokingUserRole } = useRevokeUserRoles();
   const rootBreadcrumb = intl.formatMessage(messages['library.authz.breadcrumb.root']) || '';
   const pageManageTitle = intl.formatMessage(messages['library.authz.manage.page.title']);
-  const teamMembersPath = `/authz/${ROUTES.LIBRARIES_TEAM_PATH.replace(':libraryId', libraryId)}`;
+  const { data: teamMembersData } = useTeamMembers(libraryId, querySettings);
+  const user = teamMembersData?.results?.find(member => member.username === username);
 
-  //const { data: teamMembers } = useTeamMembers(libraryId);
-  //console.log(teamMembers)
-  //const user = teamMembers?.find(member => member.username === username);
-  const user = location?.state?.user;
-  console.log(user)
   const [roleToDelete, setRoleToDelete] = useState('');
   const [showConfirmDeletionModal, setShowConfirmDeletionModal] = useState(false);
 
@@ -70,13 +82,6 @@ const LibrariesUserManager = () => {
     }
   };
 
-  // useEffect(() => {
-  //   if (!isLoadingTeamMembers && !userRoles.length) {
-  //     navigate(teamMembersPath);
-  //   }
-  //   // eslint-disable-next-line react-hooks/exhaustive-deps
-  // }, [userRoles, libraryId]);
-
   return (
     <div className="authz-libraries">
       <ConfirmDeletionModal
@@ -100,16 +105,16 @@ const LibrariesUserManager = () => {
         pageSubtitle={<p>{user?.email}</p>}
         actions={user && canManageTeam
           ? [<AssignNewRoleTrigger
-              username={user.username}
-              libraryId={libraryId}
-              currentUserRoles={userRoles.map(role => role.role)}
+            username={user.username}
+            libraryId={libraryId}
+            currentUserRoles={userRoles.map(role => role.role)}
           />]
           : []}
       >
         <Container className="bg-light-200 p-5">
           {userRoles && userRoles.map(role => (
             <RoleCard
-              key={`${role}-${user.username}`}
+              key={`${role}-${user?.username}`}
               title={role.name}
               objectName={library.title}
               description={role.description}

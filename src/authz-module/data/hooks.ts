@@ -97,7 +97,7 @@ export const useRevokeUserRoles = () => {
       data: RevokeUserRolesRequest
     }) => revokeUserRoles(data),
     onSettled: (_data, _error, { data: { scope } }) => {
-      queryClient.invalidateQueries({ queryKey: authzQueryKeys.teamMembers(scope) });
+      queryClient.invalidateQueries({ queryKey: authzQueryKeys.teamMembersAll(scope) });
     },
   });
 };
