@@ -71,6 +71,11 @@ const messages = defineMessages({
     defaultMessage: 'Roles',
     description: 'Libraries team management table roles column header',
   },
+  'libraries.authz.manage.assign.role.success': {
+    id: 'libraries.authz.manage.assign.role.success',
+    defaultMessage: 'Role added successfully.',
+    description: 'Libraries AuthZ assign role success message',
+  }
 });
 
 export default messages;

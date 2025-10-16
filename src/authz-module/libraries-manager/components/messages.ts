@@ -1,7 +1,7 @@
 import { defineMessages } from '@edx/frontend-platform/i18n';
 
 const messages = defineMessages({
- 'library.authz.team.remove.user.modal.title': {
+  'library.authz.team.remove.user.modal.title': {
     id: 'library.authz.team.remove.user.modal.title',
     defaultMessage: 'Remove role?',
     description: 'Libraries team management remove user modal title',
@@ -45,6 +45,21 @@ const messages = defineMessages({
     id: 'libraries.authz.manage.save.button',
     defaultMessage: 'Save',
     description: 'Libraries AuthZ save button title',
+  },
+  'library.authz.team.remove.user.toast.success.description': {
+    id: 'library.authz.team.remove.user.toast.success.description',
+    defaultMessage: 'The {role} role has been successfully removed.{rolesCount, plural, =0 { The user no longer has access to this library and has been removed from the member list.} other {}}',
+    description: 'Libraries team management remove user toast success',
+  },
+  'libraries.authz.manage.assign.new.role.title': {
+    id: 'libraries.authz.manage.assign.new.role.title',
+    defaultMessage: 'Add New Role',
+    description: 'Libraries AuthZ assign a new role to a user button title',
+  },
+  'libraries.authz.manage.assign.role.success': {
+    id: 'libraries.authz.manage.assign.role.success',
+    defaultMessage: 'Role added successfully.',
+    description: 'Libraries AuthZ assign role success message',
   },
 });
 

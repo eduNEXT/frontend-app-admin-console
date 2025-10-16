@@ -43,8 +43,8 @@ const LibrariesUserManager = () => {
   const { mutate: revokeUserRoles, isPending: isRevokingUserRole } = useRevokeUserRoles();
   const rootBreadcrumb = intl.formatMessage(messages['library.authz.breadcrumb.root']) || '';
   const pageManageTitle = intl.formatMessage(messages['library.authz.manage.page.title']);
-  const { data: teamMembersData } = useTeamMembers(libraryId, querySettings);
-  const user = teamMembersData?.results?.find(member => member.username === username);
+  const { data: teamMember, isLoading: isLoadingTeamMember, isFetching: isFetchingMember } = useTeamMembers(libraryId, querySettings);
+  const user = teamMember?.results?.find(member => member.username === username);
 
   const [roleToDelete, setRoleToDelete] = useState('');
   const [showConfirmDeletionModal, setShowConfirmDeletionModal] = useState(false);
@@ -55,6 +55,16 @@ const LibrariesUserManager = () => {
       roles: assignedRoles, permissions, resources, intl,
     });
   }, [roles, user?.roles, permissions, resources, intl]);
+
+  useEffect(() => {
+    if (!isFetchingMember) {
+      if (!isLoadingTeamMember && !user?.username) {
+        navigate(teamMembersPath);
+      }
+
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isFetchingMember, isLoadingTeamMember, user?.username]);
 
   const handleCloseConfirmDeletionModal = () => {
     setShowConfirmDeletionModal(false);
@@ -114,7 +124,7 @@ const LibrariesUserManager = () => {
         <Container className="bg-light-200 p-5">
           {userRoles && userRoles.map(role => (
             <RoleCard
-              key={`${role}-${user?.username}`}
+              key={`${role.role}-${user?.username}`}
               title={role.name}
               objectName={library.title}
               description={role.description}

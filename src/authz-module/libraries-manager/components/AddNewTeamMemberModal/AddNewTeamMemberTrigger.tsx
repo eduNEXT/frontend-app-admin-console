@@ -42,6 +42,12 @@ const AddNewTeamMemberTrigger: FC<AddNewTeamMemberTriggerProps> = ({
     const notFoundUsers = errors.filter(err => err.error === RoleOperationErrorStatus.USER_NOT_FOUND)
       .map(err => err.userIdentifier);
 
+    if (errors.length == 1 && errors[0].error == RoleOperationErrorStatus.USER_ALREADY_HAS_ROLE) {
+      setFormValues(DEFAULT_FORM_VALUES);
+      setIsError(false);
+      close();
+    };
+
     if (notFoundUsers.length) {
       setIsError(true);
       setFormValues((prev) => ({
