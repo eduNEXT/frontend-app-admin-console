@@ -108,7 +108,7 @@ const TeamTable = () => {
                 variant="link"
                 size="sm"
                 // TODO: update the view with the team member view
-                onClick={() => navigate(`/authz/libraries/${libraryId}/${row.original.username}`)}
+                onClick={() => navigate(`/authz/libraries/${libraryId}/${row.original.username}`, { state: { user: row.original }})}
               >
                 {intl.formatMessage(messages['authz.libraries.team.table.edit.action'])}
               </Button>

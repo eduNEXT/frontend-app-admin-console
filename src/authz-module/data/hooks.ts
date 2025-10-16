@@ -84,7 +84,7 @@ export const useAssignTeamMembersRole = () => {
       data: AssignTeamMembersRoleRequest
     }) => assignTeamMembersRole(data),
     onSettled: (_data, _error, { data: { scope } }) => {
-      queryClient.invalidateQueries({ queryKey: authzQueryKeys.teamMembers(scope) });
+      queryClient.invalidateQueries({ queryKey: authzQueryKeys.teamMembersAll(scope) });
     },
   });
 };

@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { useParams } from 'react-router-dom';
+import { useLocation, useParams } from 'react-router-dom';
 import { useIntl } from '@edx/frontend-platform/i18n';
 import { Container } from '@openedx/paragon';
 import { ROUTES } from '@src/authz-module/constants';
@@ -14,7 +14,8 @@ import messages from './messages';
 
 const LibrariesUserManager = () => {
   const intl = useIntl();
-  const { username } = useParams();
+ // const { username } = useParams();
+ const location = useLocation();
   const {
     libraryId, permissions, roles, resources, canManageTeam,
   } = useLibraryAuthZ();
@@ -22,8 +23,11 @@ const LibrariesUserManager = () => {
   const rootBreadcrumb = intl.formatMessage(messages['library.authz.breadcrumb.root']) || '';
   const pageManageTitle = intl.formatMessage(messages['library.authz.manage.page.title']);
 
-  const { data: teamMembers } = useTeamMembers(libraryId);
-  const user = teamMembers?.find(member => member.username === username);
+  //const { data: teamMembers } = useTeamMembers(libraryId);
+  //console.log(teamMembers)
+  //const user = teamMembers?.find(member => member.username === username);
+  const user = location?.state?.user;
+  console.log(user)
   const userRoles = useMemo(() => {
     const assignedRoles = roles.filter(role => user?.roles.includes(role.role));
     return buildPermissionMatrixByRole({
@@ -50,7 +54,7 @@ const LibrariesUserManager = () => {
         <Container className="bg-light-200 p-5">
           {userRoles && userRoles.map(role => (
             <RoleCard
-              key={`${role}-${username}`}
+              key={`${role}-${user.username}`}
               title={role.name}
               objectName={library.title}
               description={role.description}

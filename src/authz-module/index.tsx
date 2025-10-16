@@ -14,10 +14,12 @@ const AuthZModule = () => (
     {({ reset }) => (
       <ErrorBoundary fallbackRender={LibrariesErrorFallback} onReset={reset}>
         <Suspense fallback={<LoadingPage />}>
-          <Route element={<LibrariesLayout />}>
-            <Route path={ROUTES.LIBRARIES_TEAM_PATH} element={<LibrariesTeamManager />} />
-            <Route path={ROUTES.LIBRARIES_USER_PATH} element={<LibrariesUserManager />} />
-          </Route>
+          <Routes>
+            <Route element={<LibrariesLayout />}>
+              <Route path={ROUTES.LIBRARIES_TEAM_PATH} element={<LibrariesTeamManager />} />
+              <Route path={ROUTES.LIBRARIES_USER_PATH} element={<LibrariesUserManager />} />
+            </Route>
+            </Routes>
         </Suspense>
       </ErrorBoundary>
     )}
