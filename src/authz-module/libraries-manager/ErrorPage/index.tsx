@@ -11,7 +11,7 @@ import {
 
 import messages from './messages';
 
-const getErrorConfig = ({ errorMessage, errorStatus }) => {
+const getErrorConfig = ({ errorMessage, errorStatus }: { errorMessage: string; errorStatus: number }) => {
   if (errorMessage === CustomErrors.NO_ACCESS || ERROR_STATUS.NO_ACCESS.includes(errorStatus)) {
     return ({
       title: messages['error.page.title.noAccess'],

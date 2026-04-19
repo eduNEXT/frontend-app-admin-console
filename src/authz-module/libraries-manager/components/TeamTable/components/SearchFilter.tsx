@@ -5,8 +5,8 @@ import {
 import { Search } from '@openedx/paragon/icons';
 
 interface SearchFilterProps {
-  filterValue: string;
-  setFilter: (value: string) => void;
+  filterValue: string | undefined;
+  setFilter: (value: string | undefined) => void;
   placeholder: string;
 }
 
@@ -18,7 +18,7 @@ const SearchFilter = ({
     trailingElement={<Icon src={Search} />}
     value={filterValue || ''}
     type="text"
-    onChange={e => {
+    onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
       setFilter(e.target.value || undefined); // Set undefined to remove the filter entirely
     }}
     placeholder={placeholder}

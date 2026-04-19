@@ -11,7 +11,7 @@ describe('SearchFilter', () => {
   const SearchFilterWrapper = ({
     initFilterValue = '', customPlaceholder = 'Search placeholder',
   }:{ initFilterValue?: string; customPlaceholder?:string }) => {
-    const [filter, setFilter] = useState(initFilterValue);
+    const [filter, setFilter] = useState<string | undefined>(initFilterValue);
     return (
       <SearchFilter
         filterValue={filter}

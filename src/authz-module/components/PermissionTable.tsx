@@ -5,7 +5,7 @@ import {
   Card, Icon, OverlayTrigger, Tooltip,
 } from '@openedx/paragon';
 import { PermissionsResourceGrouped, Role } from '@src/types';
-import { actionsDictionary } from './RoleCard/constants';
+import { actionsDictionary, ActionKey } from './RoleCard/constants';
 import ResourceTooltip from './ResourceTooltip';
 import messages from './messages';
 
@@ -66,7 +66,7 @@ const PermissionTable = ({ permissionsTable, roles, title }: PermissionTableProp
               {resourceGroup.permissions.map(permission => (
                 <tr key={permission.key} className="border-top">
                   <td className="text-start d-flex align-items-center small px-4 py-3">
-                    <Icon className="d-inline-block mr-2" size="sm" src={actionsDictionary[permission.actionKey]} />
+                    <Icon className="d-inline-block mr-2" size="sm" src={actionsDictionary[permission.actionKey as ActionKey]} />
                     {permission.label}
                   </td>
                   {roles.map(role => (

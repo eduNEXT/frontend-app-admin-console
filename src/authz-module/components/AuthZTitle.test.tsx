@@ -17,7 +17,7 @@ describe('AuthZTitle', () => {
 
   it('renders without optional fields', () => {
     render(<AuthZTitle {...defaultProps} />);
-    expect(screen.getByText(defaultProps.activeLabel)).toBeInTheDocument();
+    expect(screen.getByText(defaultProps.activeLabel as string)).toBeInTheDocument();
     expect(screen.getByText(defaultProps.pageTitle)).toBeInTheDocument();
     expect(screen.getByText(defaultProps.pageSubtitle as string)).toBeInTheDocument();
   });
@@ -35,7 +35,7 @@ describe('AuthZTitle', () => {
       expect(screen.getByText(label)).toHaveAttribute('href', expect.stringContaining(to));
     });
 
-    expect(screen.getByText(defaultProps.activeLabel)).toBeInTheDocument();
+    expect(screen.getByText(defaultProps.activeLabel as string)).toBeInTheDocument();
   });
 
   it('renders page title', () => {

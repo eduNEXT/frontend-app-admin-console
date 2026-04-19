@@ -48,7 +48,7 @@ describe('TableControlBar', () => {
     state: mockState,
   };
 
-  const renderWithContext = (component, contextOverride = {}) => {
+  const renderWithContext = (component: React.ReactNode, contextOverride = {}) => {
     const context = { ...mockDataTableContext, ...contextOverride };
     return renderWrapper(
       <DataTableContext.Provider value={context}>

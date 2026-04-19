@@ -9,19 +9,21 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 const mockAppContext = {
   authenticatedUser: {
+    userId: 1,
     username: 'testuser',
-    email: 'testuser@example.com',
+    roles: [],
+    administrator: false,
   },
   config: {
     ...process.env,
   },
-};
+} as unknown as React.ContextType<typeof AppContext>;
 
 interface WrapperProps {
   children: ReactNode;
 }
 
-export const renderWithAllProviders = (ui, options = {}) => {
+export const renderWithAllProviders = (ui: ReactNode, options = {}) => {
   const queryClient = new QueryClient({
     defaultOptions: {
       queries: {
@@ -44,7 +46,7 @@ export const renderWithAllProviders = (ui, options = {}) => {
   return render(ui, { wrapper: Wrapper, ...options });
 };
 
-export const renderWrapper = (ui, options = {}) => {
+export const renderWrapper = (ui: ReactNode, options = {}) => {
   const Wrapper = ({ children }: WrapperProps) => (
     <BrowserRouter>
       <AppContext.Provider value={mockAppContext}>

@@ -1,4 +1,4 @@
-import { useContext } from 'react';
+import { Context, useContext } from 'react';
 import { useIntl } from '@edx/frontend-platform/i18n';
 import {
   DataTable, DataTableContext,
@@ -7,6 +7,7 @@ import {
   TextFilter,
   Button,
 } from '@openedx/paragon';
+import type { DataTableContextShape } from '@src/paragon';
 
 import MultipleChoiceFilter from './MultipleChoiceFilter';
 import SortDropdown from './SortDropdown';
@@ -19,7 +20,7 @@ const TableControlBar = () => {
     columns,
     setAllFilters,
     state,
-  } = useContext<DataTableContext>(DataTableContext);
+  } = useContext(DataTableContext as unknown as Context<DataTableContextShape>);
 
   const availableFilters = columns.filter((column) => column.canFilter);
 
@@ -28,8 +29,8 @@ const TableControlBar = () => {
     .map((column) => column.Header);
 
   const getSearchPlaceholder = () => intl.formatMessage(messages['authz.libraries.team.table.search'], {
-    firstField: columnTextFilterHeaders[0] || 'field',
-    secondField: columnTextFilterHeaders[1] || 'field',
+    firstField: String(columnTextFilterHeaders[0] || 'field'),
+    secondField: String(columnTextFilterHeaders[1] || 'field'),
   });
 
   return (
@@ -37,7 +38,7 @@ const TableControlBar = () => {
 
       {availableFilters.map((column) => {
         if (column.Filter === CheckboxFilter) {
-          return <MultipleChoiceFilter {...column} />;
+          return <MultipleChoiceFilter {...(column as React.ComponentProps<typeof MultipleChoiceFilter>)} />;
         }
 
         if (column.Filter === TextFilter) {
@@ -45,7 +46,7 @@ const TableControlBar = () => {
             <SearchFilter
               key={column.id || column.accessor}
               filterValue={column.filterValue}
-              setFilter={column.setFilter}
+              setFilter={column.setFilter!}
               placeholder={getSearchPlaceholder()}
             />
           );

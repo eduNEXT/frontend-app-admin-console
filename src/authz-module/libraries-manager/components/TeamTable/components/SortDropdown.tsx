@@ -1,4 +1,5 @@
 import {
+  Context,
   useContext, useState, useMemo, useCallback,
   useEffect,
   FC,
@@ -11,6 +12,7 @@ import {
   Stack,
 } from '@openedx/paragon';
 import { SwapVert } from '@openedx/paragon/icons';
+import type { DataTableContextShape } from '@src/paragon';
 
 interface SortOption {
   id: string;
@@ -29,7 +31,7 @@ const SORT_BY_OPTIONS: SortByOptions = {
 
 const SortDropdown: FC = () => {
   const intl = useIntl();
-  const { toggleSortBy, state } = useContext<DataTableContext>(DataTableContext);
+  const { toggleSortBy, state } = useContext(DataTableContext as unknown as Context<DataTableContextShape>);
   const [sortOrder, setSortOrder] = useState<string | undefined>(undefined);
 
   const SORT_LABELS: Record<string, string> = useMemo(() => ({

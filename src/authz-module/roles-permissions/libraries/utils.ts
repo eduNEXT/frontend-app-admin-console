@@ -31,7 +31,7 @@ const getPermissionMetadata = (permission: PermissionMetadata, intl: IntlShape):
     messageKey = 'authz.permissions.actions.manage';
   }
 
-  const messageDescriptor = actionMessages[messageKey];
+  const messageDescriptor = actionMessages[messageKey as keyof typeof actionMessages];
   const label = permission.label || (messageDescriptor
     ? intl.formatMessage(messageDescriptor, { resource: '' })
     : permission.key);

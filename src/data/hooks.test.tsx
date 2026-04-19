@@ -88,7 +88,7 @@ describe('useValidateUserPermissions', () => {
   });
 
   it('returns allowed true when permissions are valid', async () => {
-    getAuthenticatedHttpClient.mockReturnValue({
+    (getAuthenticatedHttpClient as jest.Mock).mockReturnValue({
       post: jest.fn().mockResolvedValueOnce({ data: mockValidPermissions }),
     });
 
@@ -103,7 +103,7 @@ describe('useValidateUserPermissions', () => {
   });
 
   it('returns allowed false when permissions are invalid', async () => {
-    getAuthenticatedHttpClient.mockReturnValue({
+    (getAuthenticatedHttpClient as jest.Mock).mockReturnValue({
       post: jest.fn().mockResolvedValue({ data: mockInvalidPermissions }),
     });
 
@@ -120,7 +120,7 @@ describe('useValidateUserPermissions', () => {
   it('handles error when the API call fails', async () => {
     const mockError = new Error('API Error');
 
-    getAuthenticatedHttpClient.mockReturnValue({
+    (getAuthenticatedHttpClient as jest.Mock).mockReturnValue({
       post: jest.fn().mockRejectedValue(new Error('API Error')),
     });
 

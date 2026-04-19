@@ -45,6 +45,9 @@ const mockTeamMember = {
   email: 'john.doe@example.com',
   roles: ['instructor', 'author'],
   createdAt: '2023-01-01T00:00:00Z',
+  scope: { resource: 'lib123', type: 'LIBRARY' as const },
+  organization: 'OpenedX',
+  role: 'instructor',
 };
 
 const mockSkeletonMember = {
@@ -53,6 +56,9 @@ const mockSkeletonMember = {
   email: '',
   roles: [],
   createdAt: '',
+  scope: { resource: '', type: 'LIBRARY' as const },
+  organization: '',
+  role: '',
 };
 
 const mockCellProps = {

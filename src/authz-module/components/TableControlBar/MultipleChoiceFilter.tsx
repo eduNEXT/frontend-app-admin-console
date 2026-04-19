@@ -22,7 +22,7 @@ const MultipleChoiceFilter = ({
   const { formatMessage } = useIntl();
 
   const checkedBoxes = filterValue || [];
-  const handleClickCheckbox = (value, displayName) => {
+  const handleClickCheckbox = (value: string, displayName: string) => {
     const newValue = {
       groupName: filterButtonText?.toLocaleLowerCase() || '',
       value,
@@ -71,7 +71,7 @@ const MultipleChoiceFilter = ({
           type="text"
           trailingElement={<Icon src={Search} />}
           placeholder={formatMessage(messages['authz.table.controlbar.search'])}
-          onChange={(e) => {
+          onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
             setSearchValue(e.target.value);
             onSearchChange?.(e.target.value);
           }}

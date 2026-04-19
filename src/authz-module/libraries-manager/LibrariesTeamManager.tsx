@@ -72,7 +72,7 @@ const LibrariesTeamManager = () => {
                     title={role.name}
                     userCounter={role.userCount}
                     description={role.description}
-                    permissionsByResource={role.resources as any[]}
+                    permissionsByResource={role.resources}
                   />
                 ))}
             </Container>

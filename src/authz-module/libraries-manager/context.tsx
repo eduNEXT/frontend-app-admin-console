@@ -5,7 +5,7 @@ import { useParams } from 'react-router-dom';
 import { AppContext } from '@edx/frontend-platform/react';
 import { useValidateUserPermissions } from '@src/data/hooks';
 import { usePermissionsByRole } from '@src/authz-module/data/hooks';
-import { PermissionMetadata, ResourceMetadata, Role } from 'types';
+import { PermissionMetadata, ResourceMetadata, Role } from '@src/types';
 import { CustomErrors } from '@src/constants';
 import {
   CONTENT_LIBRARY_PERMISSIONS, libraryPermissions, libraryResourceTypes, libraryRolesMetadata,
@@ -15,13 +15,6 @@ const LIBRARY_TEAM_PERMISSIONS = [
   CONTENT_LIBRARY_PERMISSIONS.VIEW_LIBRARY_TEAM,
   CONTENT_LIBRARY_PERMISSIONS.MANAGE_LIBRARY_TEAM,
 ];
-
-export type AppContextType = {
-  authenticatedUser: {
-    username: string;
-    email: string;
-  };
-};
 
 type LibraryAuthZContextType = {
   canManageTeam: boolean;
@@ -40,7 +33,7 @@ type AuthZProviderProps = {
 
 export const LibraryAuthZProvider = ({ children }: AuthZProviderProps) => {
   const { libraryId } = useParams<{ libraryId: string }>();
-  const { authenticatedUser } = useContext(AppContext) as AppContextType;
+  const { authenticatedUser } = useContext(AppContext) as React.ContextType<typeof AppContext>;
 
   // TODO: Implement a custom error view
   if (!libraryId) {
@@ -62,13 +55,13 @@ export const LibraryAuthZProvider = ({ children }: AuthZProviderProps) => {
   } as Role));
 
   const value = useMemo((): LibraryAuthZContextType => ({
-    username: authenticatedUser.username,
+    username: authenticatedUser?.username ?? '',
     libraryId,
     roles,
     permissions: libraryPermissions,
     resources: libraryResourceTypes,
     canManageTeam,
-  }), [libraryId, authenticatedUser.username, canManageTeam, roles]);
+  }), [libraryId, authenticatedUser?.username, canManageTeam, roles]);
 
   return (
     <LibraryAuthZContext.Provider value={value}>

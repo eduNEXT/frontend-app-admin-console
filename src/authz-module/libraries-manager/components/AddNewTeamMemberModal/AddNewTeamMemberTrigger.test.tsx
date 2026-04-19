@@ -4,6 +4,7 @@ import userEvent from '@testing-library/user-event';
 import { renderWrapper } from '@src/setupTest';
 import { useAssignTeamMembersRole } from '@src/authz-module/data/hooks';
 import { ToastManagerProvider } from '@src/authz-module/libraries-manager/ToastManagerContext';
+import type { AddNewTeamMemberModalProps } from './AddNewTeamMemberModal';
 import AddNewTeamMemberTrigger from './AddNewTeamMemberTrigger';
 
 jest.mock('@edx/frontend-platform/logging');
@@ -19,7 +20,7 @@ jest.mock('./AddNewTeamMemberModal', () => {
   /* eslint-disable react/prop-types */
   const MockModal = ({
     isOpen, close, onSave, isLoading, formValues, handleChangeForm,
-  }) => (
+  }: AddNewTeamMemberModalProps) => (
     isOpen ? (
       <div role="dialog" aria-label="assign role">
         <button type="button" onClick={close} aria-label="Close modal">Close</button>

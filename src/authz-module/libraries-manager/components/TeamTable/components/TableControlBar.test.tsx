@@ -28,7 +28,9 @@ jest.mock('./SortDropdown', () => {
 
 jest.mock('./SearchFilter', () => {
   // eslint-disable-next-line react/prop-types
-  const MockSearchFilter = (props) => (
+  const MockSearchFilter = (props: {
+    placeholder?: string; filterValue?: string; setFilter: (value: string) => void;
+  }) => (
     <div role="search" aria-label="Search filter">
       <input
         // eslint-disable-next-line react/prop-types

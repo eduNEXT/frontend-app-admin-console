@@ -7,7 +7,7 @@ export interface PermissionValidationResponse extends PermissionValidationReques
   allowed: boolean;
 }
 
-// Libraries AuthZ types
+// AuthZ types
 export interface TeamMember {
   username: string;
   fullName: string;
@@ -91,20 +91,6 @@ export type RoleResourceGroup = {
 
 export type PermissionsRoleGrouped = Role & {
   resources: RoleResourceGroup[];
-};
-
-// Paragon table type
-export interface TableCellValue<T> {
-  row: {
-    original: T;
-  };
-}
-
-export type AppContextType = {
-  authenticatedUser: {
-    username: string;
-    email: string;
-  };
 };
 
 export interface UserRole {

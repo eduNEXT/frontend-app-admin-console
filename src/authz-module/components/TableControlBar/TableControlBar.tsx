@@ -1,4 +1,6 @@
-import { useContext, useEffect, useState } from 'react';
+import {
+  Context, useContext, useEffect, useState,
+} from 'react';
 import { useIntl } from '@edx/frontend-platform/i18n';
 import {
   DataTableContext,
@@ -13,6 +15,7 @@ import {
   Business, Close, LocationOn, Person,
   Warning,
 } from '@openedx/paragon/icons';
+import type { DataTableContextShape } from '@src/paragon';
 
 import { MAX_TABLE_FILTERS_APPLIED } from '@src/authz-module/constants';
 import MultipleChoiceFilter from './MultipleChoiceFilter';
@@ -48,8 +51,7 @@ const TableControlBar = ({ onFilterChange }: TableControlBarProps) => {
     columns,
     setAllFilters,
     state,
-  // @ts-ignore-next-line - Paragon's DataTableContext is not typed
-  } = useContext<DataTableContext>(DataTableContext);
+  } = useContext(DataTableContext as unknown as Context<DataTableContextShape>);
 
   useEffect(() => {
     if (state.filters.length > 0) {
@@ -78,20 +80,23 @@ const TableControlBar = ({ onFilterChange }: TableControlBarProps) => {
     .map((column) => column.Header);
 
   const getSearchPlaceholder = () => intl.formatMessage(messages['authz.table.controlbar.search.by.fields'], {
-    firstField: columnTextFilterHeaders[0] || '',
-    secondField: columnTextFilterHeaders[1] || '',
+    firstField: String(columnTextFilterHeaders[0] || ''),
+    secondField: String(columnTextFilterHeaders[1] || ''),
   });
 
-  const handleCloseFilter = (filterName, filterValue) => {
-    const actualFilterId = FILTER_GROUP_TO_ID[filterName] || filterName;
+  const handleCloseFilter = (filterName: string, filterValue: string) => {
+    const actualFilterId = FILTER_GROUP_TO_ID[filterName as keyof typeof FILTER_GROUP_TO_ID] || filterName;
     const filterGroup = state.filters.find((filter) => filter.id === actualFilterId);
-    const newFilterValue = filterGroup?.value.filter(item => item !== filterValue) || [];
-    setAllFilters(state.filters.map(item => (
+    const newFilterValue = filterGroup?.value.filter((item: string) => item !== filterValue) || [];
+    setAllFilters(state.filters.map((item) => (
       item.id !== actualFilterId ? item : { id: item.id, value: newFilterValue })));
     setChronologicalFilters((prevFilters) => prevFilters.filter((filter) => filter.value !== filterValue));
   };
 
-  const handleSetFilters = (setFilter) => (allFilters: string[], newFilter: FilterChoice) => {
+  const handleSetFilters = (setFilter: (value: string[]) => void) => (
+    allFilters: string[],
+    newFilter: FilterChoice,
+  ) => {
     setFilter(allFilters);
     setChronologicalFilters((prevFilters) => {
       if (!prevFilters.find((filter) => filter.value === newFilter.value)) {
@@ -113,8 +118,8 @@ const TableControlBar = ({ onFilterChange }: TableControlBarProps) => {
           if (Filter === RolesFilter) {
             return (
               <RolesFilter
-                {...column}
-                setFilter={handleSetFilters(column.setFilter)}
+                {...(column as unknown as React.ComponentProps<typeof RolesFilter>)}
+                setFilter={handleSetFilters(column.setFilter!)}
                 disabled={filtersLimitReached}
               />
             );
@@ -122,8 +127,8 @@ const TableControlBar = ({ onFilterChange }: TableControlBarProps) => {
           if (Filter === OrgFilter) {
             return (
               <OrgFilter
-                {...column}
-                setFilter={handleSetFilters(column.setFilter)}
+                {...(column as unknown as React.ComponentProps<typeof OrgFilter>)}
+                setFilter={handleSetFilters(column.setFilter!)}
                 disabled={filtersLimitReached}
               />
             );
@@ -131,8 +136,8 @@ const TableControlBar = ({ onFilterChange }: TableControlBarProps) => {
           if (Filter === MultipleChoiceFilter) {
             return (
               <MultipleChoiceFilter
-                {...column}
-                setFilter={handleSetFilters(column.setFilter)}
+                {...(column as unknown as React.ComponentProps<typeof MultipleChoiceFilter>)}
+                setFilter={handleSetFilters(column.setFilter!)}
                 disabled={filtersLimitReached}
               />
             );
@@ -140,8 +145,8 @@ const TableControlBar = ({ onFilterChange }: TableControlBarProps) => {
           if (Filter === ScopesFilter) {
             return (
               <ScopesFilter
-                {...column}
-                setFilter={handleSetFilters(column.setFilter)}
+                {...(column as unknown as React.ComponentProps<typeof ScopesFilter>)}
+                setFilter={handleSetFilters(column.setFilter!)}
                 disabled={filtersLimitReached}
                 filterValue={state.filters.find(filter => filter.id === 'scope')?.value || null}
               />
@@ -153,7 +158,7 @@ const TableControlBar = ({ onFilterChange }: TableControlBarProps) => {
               <SearchFilter
                 key={column.id || column.accessor}
                 filterValue={column.filterValue}
-                setFilter={column.setFilter}
+                setFilter={column.setFilter!}
                 placeholder={getSearchPlaceholder()}
               />
             );
@@ -169,9 +174,9 @@ const TableControlBar = ({ onFilterChange }: TableControlBarProps) => {
             {chronologicalFilters.map((filter) => (
               <Chip
                 key={filter.value}
-                iconBefore={FILTER_CHIPS_ICONS[filter.groupName || '']}
+                iconBefore={FILTER_CHIPS_ICONS[(filter.groupName || '') as keyof typeof FILTER_CHIPS_ICONS]}
                 iconAfter={Close}
-                onIconAfterClick={() => handleCloseFilter(filter.groupName, filter.value)}
+                onIconAfterClick={() => handleCloseFilter(filter.groupName || '', filter.value)}
               >
                 {filter.displayName}
               </Chip>

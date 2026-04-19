@@ -3,7 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { useIntl } from '@edx/frontend-platform/i18n';
 import { Container, Skeleton } from '@openedx/paragon';
 import { ROUTES } from '@src/authz-module/constants';
-import { Role } from 'types';
+import { Role } from '@src/types';
 import { useToastManager } from '@src/authz-module/libraries-manager/ToastManagerContext';
 import AuthZLayout from '../components/AuthZLayout';
 import { useLibraryAuthZ } from './context';
@@ -40,6 +40,8 @@ const LibrariesUserManager = () => {
     pageIndex: 0,
     pageSize: 1,
     roles: null,
+    scopes: null,
+    organizations: null,
     search: username || null,
     sortBy: null,
   };
@@ -170,7 +172,7 @@ const LibrariesUserManager = () => {
               objectName={library.title}
               description={role.description}
               handleDelete={() => handleShowConfirmDeletionModal(role)}
-              permissionsByResource={role.resources as any[]}
+              permissionsByResource={role.resources}
             />
           ))}
         </Container>

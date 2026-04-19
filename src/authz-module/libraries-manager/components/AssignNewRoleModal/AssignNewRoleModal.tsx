@@ -2,7 +2,7 @@ import { useIntl } from '@edx/frontend-platform/i18n';
 import {
   ActionRow, Button, Form, ModalDialog,
 } from '@openedx/paragon';
-import { Role } from 'types';
+import { Role } from '@src/types';
 import messages from '../messages';
 
 interface AssignNewRoleModalProps {

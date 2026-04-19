@@ -32,8 +32,8 @@ const AuditUserPage = () => {
 
   useEffect(() => {
     if (!user && !isLoadingUser) {
-      // @ts-ignore
-      if (!isErrorUser || errorUser?.customAttributes?.httpErrorStatus === 404) {
+      const err = errorUser as { customAttributes?: { httpErrorStatus?: number } } | null;
+      if (!isErrorUser || err?.customAttributes?.httpErrorStatus === 404) {
         navigate(AUTHZ_HOME_PATH);
       }
     }

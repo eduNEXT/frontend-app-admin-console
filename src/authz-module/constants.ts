@@ -1,4 +1,4 @@
-import { PermissionMetadata, ResourceMetadata, RoleMetadata } from 'types';
+import { PermissionMetadata, ResourceMetadata, RoleMetadata } from '@src/types';
 
 export const CONTENT_LIBRARY_PERMISSIONS = {
   DELETE_LIBRARY: 'content_libraries.delete_library',

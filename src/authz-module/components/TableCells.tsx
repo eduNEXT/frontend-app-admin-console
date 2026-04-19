@@ -1,3 +1,5 @@
+import { ContextType, useContext, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useIntl } from '@edx/frontend-platform/i18n';
 import { Icon, IconButton } from '@openedx/paragon';
 import { AppContext } from '@edx/frontend-platform/react';
@@ -5,9 +7,8 @@ import {
   RemoveRedEye,
   Delete, ExpandMore,
 } from '@openedx/paragon/icons';
-import { TableCellValue, AppContextType, UserRole } from '@src/types';
-import { useNavigate } from 'react-router-dom';
-import { useContext, useMemo } from 'react';
+import { UserRole } from '@src/types';
+import type { TableCellValue } from '@src/paragon';
 import { DJANGO_MANAGED_ROLES, MAP_ROLE_KEY_TO_LABEL } from '@src/authz-module/constants';
 import { RESOURCE_ICONS } from './constants';
 import messages from './messages';
@@ -25,7 +26,7 @@ type ExtendedCellProps = CellPropsWithValue & {
 
 const NameCell = ({ row }: CellProps) => {
   const intl = useIntl();
-  const { authenticatedUser } = useContext(AppContext) as AppContextType;
+  const { authenticatedUser } = useContext(AppContext) as ContextType<typeof AppContext>;
   const username = authenticatedUser?.username;
 
   if (row.original.username === username) {
@@ -36,7 +37,7 @@ const NameCell = ({ row }: CellProps) => {
       </span>
     );
   }
-  return row.original.fullName || row.original.username;
+  return <span>{row.original.fullName || row.original.username}</span>;
 };
 
 const ViewActionCell = ({ row }: CellProps) => {

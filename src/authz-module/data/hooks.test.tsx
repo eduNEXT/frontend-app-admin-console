@@ -2,6 +2,7 @@ import { ReactNode } from 'react';
 import { act, renderHook, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { getAuthenticatedHttpClient } from '@edx/frontend-platform/auth';
+import { QuerySettings } from './api';
 import {
   useLibrary,
   usePermissionsByRole,
@@ -107,8 +108,10 @@ const mockScopes = {
   ],
 };
 
-const mockQuerySettings = {
+const mockQuerySettings: QuerySettings = {
   roles: null,
+  scopes: null,
+  organizations: null,
   search: null,
   order: null,
   sortBy: null,
@@ -188,7 +191,7 @@ describe('useTeamMembers', () => {
   });
 
   it('returns data when API call succeeds', async () => {
-    getAuthenticatedHttpClient.mockReturnValue({
+    (getAuthenticatedHttpClient as jest.Mock).mockReturnValue({
       get: jest.fn().mockResolvedValue({ data: mockMembers }),
     });
 
@@ -203,7 +206,7 @@ describe('useTeamMembers', () => {
   });
 
   it('handles error when API call fails', async () => {
-    getAuthenticatedHttpClient.mockReturnValue({
+    (getAuthenticatedHttpClient as jest.Mock).mockReturnValue({
       get: jest.fn().mockRejectedValue(new Error('API failure')),
     });
 
@@ -225,7 +228,7 @@ describe('useLibrary', () => {
   });
 
   it('returns metadata on success', async () => {
-    getAuthenticatedHttpClient.mockReturnValue({
+    (getAuthenticatedHttpClient as jest.Mock).mockReturnValue({
       get: jest.fn().mockResolvedValueOnce({ data: mockLibrary }),
     });
 
@@ -240,7 +243,7 @@ describe('useLibrary', () => {
   });
 
   it('throws on error', () => {
-    getAuthenticatedHttpClient.mockReturnValue({
+    (getAuthenticatedHttpClient as jest.Mock).mockReturnValue({
       get: jest.fn().mockRejectedValue(new Error('Not found')),
     });
 
@@ -264,7 +267,7 @@ describe('usePermissionsByRole', () => {
       { role: 'user', permissions: ['perm2'], userCount: 2 },
     ];
 
-    getAuthenticatedHttpClient.mockReturnValue({
+    (getAuthenticatedHttpClient as jest.Mock).mockReturnValue({
       get: jest.fn().mockResolvedValue({ data: { results: mockRoles } }),
     });
 
@@ -276,7 +279,7 @@ describe('usePermissionsByRole', () => {
   });
 
   it('returns error if getRoles fails', async () => {
-    getAuthenticatedHttpClient.mockReturnValue({
+    (getAuthenticatedHttpClient as jest.Mock).mockReturnValue({
       get: jest.fn().mockRejectedValue(new Error('Not found')),
     });
     const wrapper = createWrapper();
@@ -309,7 +312,7 @@ describe('usePermissionsByRole', () => {
         errors: [],
       };
 
-      getAuthenticatedHttpClient.mockReturnValue({
+      (getAuthenticatedHttpClient as jest.Mock).mockReturnValue({
         put: jest.fn().mockResolvedValue({ data: mockResponse }),
       });
 
@@ -334,7 +337,7 @@ describe('usePermissionsByRole', () => {
     });
 
     it('handles error when adding team members fails', async () => {
-      getAuthenticatedHttpClient.mockReturnValue({
+      (getAuthenticatedHttpClient as jest.Mock).mockReturnValue({
         put: jest.fn().mockRejectedValue(new Error('Failed to add members')),
       });
 
@@ -376,7 +379,7 @@ describe('useRevokeUserRoles', () => {
       errors: [],
     };
 
-    getAuthenticatedHttpClient.mockReturnValue({
+    (getAuthenticatedHttpClient as jest.Mock).mockReturnValue({
       delete: jest.fn().mockResolvedValue({ data: mockResponse }),
     });
 
@@ -401,7 +404,7 @@ describe('useRevokeUserRoles', () => {
   });
 
   it('handles error when revoking roles fails', async () => {
-    getAuthenticatedHttpClient.mockReturnValue({
+    (getAuthenticatedHttpClient as jest.Mock).mockReturnValue({
       delete: jest.fn().mockRejectedValue(new Error('Failed to revoke roles')),
     });
 
@@ -430,7 +433,7 @@ describe('useRevokeUserRoles', () => {
       data: { completed: [], errors: [] },
     });
 
-    getAuthenticatedHttpClient.mockReturnValue({
+    (getAuthenticatedHttpClient as jest.Mock).mockReturnValue({
       delete: mockDelete,
     });
 

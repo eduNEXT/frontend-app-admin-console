@@ -112,9 +112,9 @@ jest.mock('@src/authz-module/data/hooks', () => ({
 }));
 
 const mockApiResponses = (
-  allAsignmentsResponse = mockedAllRoleAssignments,
-  orgResponse = mockedOrgs,
-  scopesResponse = mockedScopes,
+  allAsignmentsResponse: Record<string, unknown> = mockedAllRoleAssignments,
+  orgResponse: Record<string, unknown> = mockedOrgs,
+  scopesResponse: Record<string, unknown> = mockedScopes,
 ) => {
   (useAllRoleAssignments as jest.Mock).mockReturnValue(allAsignmentsResponse);
   (useOrgs as jest.Mock).mockReturnValue(orgResponse);
@@ -150,9 +150,10 @@ describe('TeamMembersTable', () => {
       ...mockedAllRoleAssignments,
       isLoading: false,
       error: new Error('Failed to fetch'),
-      data: { results: [] },
+      data: {
+        results: [], count: 0, next: null, previous: null,
+      },
     };
-    // @ts-ignore
     mockApiResponses(allAsignmentsResponse);
     renderWithAllProviders(<ToastManagerProvider><TeamMembersTable /></ToastManagerProvider>);
     expect(screen.getByText(/Something went wrong on our end./)).toBeInTheDocument();

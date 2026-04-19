@@ -1,4 +1,4 @@
-import { IntlShape } from '@edx/frontend-platform/i18n';
+import type { IntlShape } from '@edx/frontend-platform/i18n';
 import { actionKeys } from '@src/authz-module/components/RoleCard/constants';
 import {
   EnrichedPermission, PermissionMetadata, PermissionsResourceGrouped,
@@ -33,7 +33,7 @@ const getPermissionMetadata = (permission: PermissionMetadata, intl: IntlShape):
     messageResource = actionKey === 'tag' ? 'Tags' : '';
   }
 
-  const messageDescriptor = actionMessages[messageKey];
+  const messageDescriptor = actionMessages[messageKey as keyof typeof actionMessages];
   const label = permission.label || (messageDescriptor
     ? intl.formatMessage(messageDescriptor, { resource: messageResource })
     : permission.key);

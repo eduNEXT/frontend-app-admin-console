@@ -1,5 +1,6 @@
 import {
   createContext, useContext, useState, useMemo,
+  ReactNode,
 } from 'react';
 import { logError } from '@edx/frontend-platform/logging';
 import { useIntl } from '@edx/frontend-platform/i18n';
@@ -22,19 +23,19 @@ export const ERROR_TOAST_MAP: Record<number | string, { type: ToastType; message
 
 export interface AppToast {
   id: string;
-  message: string;
+  message: string | ReactNode[];
   type: ToastType;
   onRetry?: () => void;
   delay?: number;
 }
 
-const Bold = (chunk: string) => <b>{chunk}</b>;
+const Bold = (chunks: ReactNode) => <b>{chunks}</b>;
 const Br = () => <br />;
 
 type ToastManagerContextType = {
   showToast: (toast: Omit<AppToast, 'id'>) => void;
-  showErrorToast: (error, retryFn?: () => void) => void;
-  Bold: (chunk: string) => JSX.Element;
+  showErrorToast: (error: unknown, retryFn?: () => void) => void;
+  Bold: (chunks: ReactNode) => JSX.Element;
   Br: () => JSX.Element;
 };
 
@@ -63,11 +64,12 @@ export const ToastManagerProvider = ({ children }: ToastManagerProviderProps) =>
   };
 
   const value = useMemo<ToastManagerContextType>(() => {
-    const showErrorToast = (error, retryFn?: () => void) => {
-      logError(error);
-      const errorStatus = error?.customAttributes?.httpErrorStatus;
-      const toastConfig = ERROR_TOAST_MAP[errorStatus] || ERROR_TOAST_MAP.DEFAULT;
-      const message = intl.formatMessage(messages[toastConfig.messageId], { Bold, Br });
+    const showErrorToast = (error: unknown, retryFn?: () => void) => {
+      logError(error as string | Error);
+      const errorStatus = (error as { customAttributes?: { httpErrorStatus?: number } } | null)
+        ?.customAttributes?.httpErrorStatus;
+      const toastConfig = ERROR_TOAST_MAP[errorStatus ?? 'DEFAULT'] || ERROR_TOAST_MAP.DEFAULT;
+      const message = intl.formatMessage(messages[toastConfig.messageId as keyof typeof messages], { Bold, Br });
       /**
        * For retryable errors, we set a longer delay to give users more time to read the message
        * and decide to retry, while for non-retryable errors we use the default delay.
@@ -111,7 +113,7 @@ export const ToastManagerProvider = ({ children }: ToastManagerProviderProps) =>
               label: intl.formatMessage(messages['library.authz.team.toast.retry.label']),
             } : undefined}
           >
-            {toast.message}
+            {toast.message as string}
           </Toast>
         ))}
       </div>

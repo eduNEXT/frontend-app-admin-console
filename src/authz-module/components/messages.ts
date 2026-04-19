@@ -64,7 +64,7 @@ const messages = defineMessages({
   'authz.table.footer.items.showing.text': {
     id: 'authz.table.footer.items.showing.text',
     defaultMessage: 'Showing {pageSize} of {itemCount}.',
-    description: 'Message displayed when the user reaches the applied filters limit',
+    description: 'Text in the table footer indicating how many items are being shown out of the total count.',
   },
   'authz.table.username.current': {
     id: 'authz.table.username.current',
@@ -96,21 +96,6 @@ const messages = defineMessages({
     id: 'authz.table.controlbar.filters.more.results',
     defaultMessage: 'Search to show more',
     description: 'Message displayed when there are more results available than currently shown',
-  },
-  'authz.table.footer.items.showing.text': {
-    id: 'authz.table.footer.items.showing.text',
-    defaultMessage: 'Showing {pageSize} of {itemCount}.',
-    description: 'Text in the table footer indicating how many items are being shown out of the total count.',
-  },
-  'authz.user.table.org.all.organizations.label': {
-    id: 'authz.user.table.org.all.organizations.label',
-    defaultMessage: 'All Organizations',
-    description: 'Label for the "All Organizations" message on the user assignments table when a user has a django managed role assigned.',
-  },
-  'authz.user.table.scope.global.label': {
-    id: 'authz.user.table.scope.global.label',
-    defaultMessage: 'Global',
-    description: 'Label for the "Global" scope in the user assignments table when a user has a django managed role assigned.',
   },
   'authz.user.table.permissions.access.label': {
     id: 'authz.user.table.permissions.access.label',

@@ -1,7 +1,7 @@
 import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { renderWrapper } from '@src/setupTest';
-import { Role } from 'types';
+import { Role } from '@src/types';
 import AssignNewRoleModal from './AssignNewRoleModal';
 
 describe('AssignNewRoleModal', () => {

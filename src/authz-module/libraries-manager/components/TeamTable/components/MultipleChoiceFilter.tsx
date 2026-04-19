@@ -15,7 +15,7 @@ const MultipleChoiceFilter = ({
 }: MultipleChoiceFilterProps) => {
   const checkedBoxes = filterValue || [];
 
-  const changeCheckbox = (value) => {
+  const changeCheckbox = (value: string) => {
     if (checkedBoxes.includes(value)) {
       const newCheckedBoxes = checkedBoxes.filter((val) => val !== value);
       return setFilter(newCheckedBoxes);

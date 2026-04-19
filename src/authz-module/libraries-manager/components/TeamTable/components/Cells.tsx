@@ -1,7 +1,8 @@
 import { useIntl } from '@edx/frontend-platform/i18n';
 import { Button, Chip, Skeleton } from '@openedx/paragon';
 import { Edit } from '@openedx/paragon/icons';
-import { TableCellValue, TeamMember } from '@src/types';
+import { TeamMember } from '@src/types';
+import type { TableCellValue } from '@src/paragon';
 import { useLibraryAuthZ } from '@src/authz-module/libraries-manager/context';
 import { useNavigate } from 'react-router-dom';
 import { useTeamMembers } from '@src/authz-module/data/hooks';
@@ -14,7 +15,7 @@ type CellProps = TableCellValue<TeamMember>;
 const EmailCell = ({ row }: CellProps) => (row.original?.username === SKELETON_ROWS[0].username ? (
   <Skeleton width="180px" />
 ) : (
-  row.original.email
+  <span>{row.original.email}</span>
 ));
 
 const NameCell = ({ row }: CellProps) => {
@@ -33,7 +34,7 @@ const NameCell = ({ row }: CellProps) => {
       </span>
     );
   }
-  return row.original.username;
+  return <span>{row.original.username}</span>;
 };
 
 const ActionCell = ({ row }: CellProps) => {
@@ -63,9 +64,11 @@ const RolesCell = ({ row }: CellProps) => {
   return (row.original.username === SKELETON_ROWS[0].username ? (
     <Skeleton width="80px" />
   ) : (
-    row.original.roles.map((role) => (
-      <Chip key={`${row.original.username}-role-${role}`}>{roleLabels[role]}</Chip>
-    ))
+    <span>
+      {row.original.roles.map((role) => (
+        <Chip key={`${row.original.username}-role-${role}`}>{roleLabels[role]}</Chip>
+      ))}
+    </span>
   ));
 };
 

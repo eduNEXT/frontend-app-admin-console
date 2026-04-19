@@ -87,7 +87,7 @@ const AddNewTeamMemberTrigger = ({ libraryId }: AddNewTeamMemberTriggerProps) =>
 
     errorTypes.forEach(({ errorMessageId, users }) => {
       if (users.length === 0) { return; }
-      const errorMessage = intl.formatMessage(messages[errorMessageId], {
+      const errorMessage = intl.formatMessage(messages[errorMessageId as keyof typeof messages], {
         count: users.length,
         userIds: users.join(', '),
         Bold,

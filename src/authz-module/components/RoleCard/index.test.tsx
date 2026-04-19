@@ -26,12 +26,13 @@ describe('RoleCard', () => {
       {
         key: 'library',
         label: 'Library Resource',
+        description: 'Library resource description',
         permissions: [
           {
-            key: 'view', label: 'View', actionKey: 'view', disabled: false,
+            key: 'view', resource: 'library', label: 'View', actionKey: 'view', disabled: false,
           },
           {
-            key: 'manage', label: 'Manage', actionKey: 'manage', disabled: true,
+            key: 'manage', resource: 'library', label: 'Manage', actionKey: 'manage', disabled: true,
           },
         ],
       },

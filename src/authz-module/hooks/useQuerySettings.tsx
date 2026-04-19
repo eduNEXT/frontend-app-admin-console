@@ -1,12 +1,10 @@
 import { useCallback, useState } from 'react';
 import { QuerySettings } from '@src/authz-module/data/api';
+import type { DataTableContextShape } from '@src/paragon';
 
-interface DataTableFilters {
-  pageSize: number;
-  pageIndex: number;
-  sortBy: Array<{ id: string; desc: boolean }>;
-  filters: Array<{ id: string; value: any }>;
-}
+type DataTableFilters = Pick<DataTableContextShape['state'], 'filters' | 'pageSize' | 'pageIndex'> & {
+  sortBy: NonNullable<DataTableContextShape['state']['sortBy']>;
+};
 
 interface UseQuerySettingsReturn {
   querySettings: QuerySettings;

@@ -3,6 +3,7 @@ import {
   Card, Collapsible, Container, Icon, IconButton,
 } from '@openedx/paragon';
 import { Delete, Person } from '@openedx/paragon/icons';
+import { RoleResourceGroup } from '@src/types';
 import PermissionRow from './PermissionsRow';
 import messages from './messages';
 
@@ -15,7 +16,7 @@ interface RoleCardProps extends CardTitleProps {
   objectName?: string | null;
   description: string;
   handleDelete?: () => void;
-  permissionsByResource: any[];
+  permissionsByResource: RoleResourceGroup[];
 }
 
 const CardTitle = ({ title, userCounter = null }: CardTitleProps) => {

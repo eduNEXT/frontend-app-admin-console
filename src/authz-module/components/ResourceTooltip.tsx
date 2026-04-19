@@ -17,7 +17,7 @@ const ResourceTooltip = ({ resourceGroup }:ResourceTooltipProps) => (
           <p className="small">{resourceGroup.description}</p>
           <ul className="small">
             {resourceGroup.permissions.map(permission => (
-              <li><b>{permission.label.trim()}:</b> {permission.description}</li>
+              <li><b>{permission.label?.trim()}:</b> {permission.description}</li>
             ))}
           </ul>
         </Popover.Content>

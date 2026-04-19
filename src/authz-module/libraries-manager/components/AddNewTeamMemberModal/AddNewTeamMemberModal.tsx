@@ -11,7 +11,7 @@ import { useLibraryAuthZ } from '@src/authz-module/libraries-manager/context';
 import { Info, SpinnerSimple } from '@openedx/paragon/icons';
 import messages from './messages';
 
-interface AddNewTeamMemberModalProps {
+export interface AddNewTeamMemberModalProps {
   isOpen: boolean;
   isError: boolean;
   isLoading: boolean;
@@ -78,7 +78,7 @@ const AddNewTeamMemberModal = ({
                 name="users"
                 rows="3"
                 value={formValues.users}
-                onChange={(e) => handleChangeForm(e)}
+                onChange={handleChangeForm}
                 placeholder={intl.formatMessage(messages['libraries.authz.manage.add.member.users.placeholder'])}
                 style={{ color: isError && 'var(--pgn-color-form-feedback-invalid)' }}
               />
@@ -89,7 +89,7 @@ const AddNewTeamMemberModal = ({
                 {intl.formatMessage(messages['libraries.authz.manage.add.member.roles.label'])}
                 <IconButton alt="tooptip-extra-info" size="inline" src={Info} onClick={openRolesPopUp} ref={targetRolesPopUpRef} />
               </Form.Label>
-              <Form.Control as="select" name="role" value={formValues.role} onChange={(e) => handleChangeForm(e)}>
+              <Form.Control as="select" name="role" value={formValues.role} onChange={handleChangeForm}>
                 <option value="" disabled>
                   {intl.formatMessage(messages['libraries.authz.manage.add.member.select.default'])}
                 </option>
