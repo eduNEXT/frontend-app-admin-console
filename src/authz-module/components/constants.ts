@@ -8,12 +8,14 @@ export const getRolesFiltersOptions = (intl: IntlShape) => [
     groupIcon: Language,
     displayName: 'Super Admin',
     value: 'super_admin',
+    contextType: 'global',
   },
   {
     groupName: intl.formatMessage(messages['authz.team.members.table.group.global']),
     groupIcon: Language,
     displayName: 'Global Staff',
     value: 'global_staff',
+    contextType: 'global',
   },
 
   {
