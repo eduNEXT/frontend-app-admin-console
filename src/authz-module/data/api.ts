@@ -5,6 +5,7 @@ import {
 } from '@src/types';
 import { camelCaseObject } from '@edx/frontend-platform';
 import { getApiUrl, getStudioApiUrl } from '@src/data/utils';
+import { TABLE_MAX_SUPPORTED_RECORDS } from '../constants';
 
 export interface QuerySettings {
   roles: string | null;
@@ -25,15 +26,12 @@ export interface GetTeamMembersResponse {
 export interface GetUserAssignmentsResponse {
   results: UserRole[];
   count: number;
-  next: string | null;
-  previous: string | null;
 }
 
 export type RevokeUserRolesRequest = {
   users: string;
   role: string;
   scope: string;
-  querySettings?: QuerySettings;
 };
 
 export interface DeleteRevokeUserRolesResponse {
@@ -66,8 +64,6 @@ export interface AssignTeamMembersRoleRequest {
 export interface GetAllRoleAssignmentsResponse {
   results: UserRole[];
   count: number;
-  next: string | null;
-  previous: string | null;
 }
 
 export interface GetOrgsResponse {
@@ -191,32 +187,47 @@ export const revokeUserRoles = async (
   return camelCaseObject(res.data);
 };
 
-export const getAllRoleAssignments = async (querySettings: QuerySettings)
-: Promise<GetAllRoleAssignmentsResponse> => {
-  const url = new URL(getApiUrl('/api/authz/v1/assignments/'));
+interface PaginatedResponse<T> {
+  results: T[];
+  count: number;
+  next: string | null;
+}
 
-  if (querySettings.roles) {
-    url.searchParams.set('roles', querySettings.roles);
-  }
-  if (querySettings.scopes) {
-    url.searchParams.set('scopes', querySettings.scopes);
-  }
-  if (querySettings.organizations) {
-    url.searchParams.set('orgs', querySettings.organizations);
-  }
-  if (querySettings.search) {
-    url.searchParams.set('search', querySettings.search);
-  }
-  if (querySettings.sortBy && querySettings.order) {
-    url.searchParams.set('sort_by', querySettings.sortBy);
-    url.searchParams.set('order', querySettings.order);
-  }
-  url.searchParams.set('page_size', querySettings.pageSize.toString());
-  url.searchParams.set('page', (querySettings.pageIndex + 1).toString());
-
-  const { data } = await getAuthenticatedHttpClient().get(url);
-  return camelCaseObject(data);
+/**
+ * Drain a paginated endpoint into a single list for client-side table management.
+ * Follows `next` until the list is exhausted or TABLE_MAX_SUPPORTED_RECORDS rows
+ * have been accumulated; the backend may clamp `page_size`, so the requested size
+ * is only an upper bound per request. `count` is the server-side total, which can
+ * exceed the number of returned results when the cap is hit.
+ */
+const fetchAllPages = async <T>(buildUrl: (page: number) => URL): Promise<{ results: T[]; count: number }> => {
+  const results: T[] = [];
+  let count = 0;
+  let next: string | null;
+  let page = 1;
+  do {
+    // eslint-disable-next-line no-await-in-loop
+    const { data } = await getAuthenticatedHttpClient().get(buildUrl(page));
+    const pageData = camelCaseObject(data) as PaginatedResponse<T>;
+    results.push(...pageData.results);
+    ({ count, next } = pageData);
+    page += 1;
+  } while (next && results.length < TABLE_MAX_SUPPORTED_RECORDS);
+  return { results: results.slice(0, TABLE_MAX_SUPPORTED_RECORDS), count };
 };
+
+export const getAllRoleAssignments = async (roles?: string)
+: Promise<GetAllRoleAssignmentsResponse> => fetchAllPages<UserRole>(
+  (page) => {
+    const url = new URL(getApiUrl('/api/authz/v1/assignments/'));
+    if (roles) {
+      url.searchParams.set('roles', roles);
+    }
+    url.searchParams.set('page_size', TABLE_MAX_SUPPORTED_RECORDS.toString());
+    url.searchParams.set('page', page.toString());
+    return url;
+  },
+);
 
 export const getOrgs = async (search?: string, page?: number, pageSize?: number): Promise<GetOrgsResponse> => {
   const url = new URL(getApiUrl('/api/authz/v1/orgs/'));
@@ -250,26 +261,15 @@ export const getCourseAuthoringFlagStates = async (): Promise<CourseAuthoringFla
   return camelCaseObject(data);
 };
 
-export const getUserAssignedRoles = async (username?: string, querySettings?: QuerySettings)
-: Promise<GetUserAssignmentsResponse> => {
-  const url = new URL(getApiUrl(`/api/authz/v1/users/${username}/assignments/`));
-
-  if (querySettings?.roles) {
-    url.searchParams.set('roles', querySettings.roles);
-  }
-  if (querySettings?.organizations) {
-    url.searchParams.set('orgs', querySettings.organizations);
-  }
-  if (querySettings?.search) {
-    url.searchParams.set('search', querySettings.search);
-  }
-  if (querySettings?.sortBy && querySettings?.order) {
-    url.searchParams.set('sort_by', querySettings.sortBy);
-    url.searchParams.set('order', querySettings?.order || '');
-  }
-  url.searchParams.set('page_size', querySettings?.pageSize?.toString() || '');
-  url.searchParams.set('page', ((querySettings?.pageIndex ?? 0) + 1).toString());
-
-  const { data } = await getAuthenticatedHttpClient().get(url);
-  return camelCaseObject(data);
-};
+export const getUserAssignedRoles = async (username?: string, roles?: string)
+: Promise<GetUserAssignmentsResponse> => fetchAllPages<UserRole>(
+  (page) => {
+    const url = new URL(getApiUrl(`/api/authz/v1/users/${username}/assignments/`));
+    if (roles) {
+      url.searchParams.set('roles', roles);
+    }
+    url.searchParams.set('page_size', TABLE_MAX_SUPPORTED_RECORDS.toString());
+    url.searchParams.set('page', page.toString());
+    return url;
+  },
+);

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
-import debounce from 'lodash.debounce';
 import { useIntl } from '@edx/frontend-platform/i18n';
 import {
+  Alert,
   DataTable,
   TextFilter,
 } from '@openedx/paragon';
@@ -9,7 +9,7 @@ import {
 import { useToastManager } from '@src/components/ToastManager/ToastManagerContext';
 import { LIBRARY_ROLE_KEYS } from '@src/authz-module/roles-permissions';
 import { useViewTeamPermissions } from '@src/authz-module/hooks/useViewTeamPermissions';
-import { useQuerySettings } from '@src/authz-module/hooks/useQuerySettings';
+import { useCourseAuthoringFlag } from '@src/authz-module/hooks/useCourseAuthoringFlag';
 import OrgFilter from '@src/authz-module/components/TableControlBar/OrgFilter';
 import RolesFilter from '@src/authz-module/components/TableControlBar/RolesFilter';
 import ScopesFilter from '@src/authz-module/components/TableControlBar/ScopesFilter';
@@ -19,7 +19,9 @@ import {
   ViewActionCell, NameCell, OrgCell, RoleCell, ScopeCell,
 } from '@src/authz-module/components/TableCells';
 import { useAllRoleAssignments } from '@src/authz-module/data/hooks';
-import { TABLE_DEFAULT_PAGE_SIZE } from '@src/authz-module/constants';
+import { TABLE_DEFAULT_PAGE_SIZE, TABLE_MAX_SUPPORTED_RECORDS } from '@src/authz-module/constants';
+import baseMessages from '@src/authz-module/messages';
+import type { UserRole } from '@src/types';
 import messages from './messages';
 import TableFooter from '../components/TableFooter/TableFooter';
 
@@ -27,37 +29,51 @@ interface TeamMembersTableProps {
   presetScope?: string;
 }
 
+// Stable fallback while the query has no data yet: a fresh object here would give
+// react-table a new `data` identity on every render, retriggering its auto-reset
+// effects in an endless render loop.
+const EMPTY_ASSIGNMENTS = { results: [], count: 0 };
+
+// Keep active filters and sorting when the assignments list is refetched
+// (e.g. after a role assignment or revocation invalidates the query).
+const TABLE_OPTIONS = { autoResetFilters: false, autoResetSortBy: false };
+
+// Client-side filter for the Name column: matches username, full name, or email,
+// mirroring the fields the old server-side `search` parameter covered.
+const filterByUserText = (
+  rows: Array<{ original: UserRole }>,
+  _columnIds: string[],
+  filterValue: string,
+) => {
+  const search = String(filterValue).toLowerCase();
+  return rows.filter(({ original }) => [original.username, original.fullName, original.email]
+    .some((value) => value?.toLowerCase().includes(search)));
+};
+
 const TeamMembersTable = ({ presetScope }: TeamMembersTableProps) => {
   const intl = useIntl();
   const { showErrorToast } = useToastManager();
   const [columnsWithFiltersApplied, setColumnsWithFiltersApplied] = useState<string[]>([]);
 
-  const initialQuerySettings = presetScope ? {
-    scopes: presetScope,
-    pageSize: TABLE_DEFAULT_PAGE_SIZE,
-    pageIndex: 0,
-    roles: null,
-    organizations: null,
-    search: null,
-    order: null,
-    sortBy: null,
-  } : undefined;
-
-  const { querySettings, handleTableFetch } = useQuerySettings(initialQuerySettings);
-
-  const { isCourseViewAllowed } = useViewTeamPermissions();
-
-  const effectiveQuerySettings = useMemo(() => {
-    if (isCourseViewAllowed || querySettings.roles) { return querySettings; }
-    return { ...querySettings, roles: LIBRARY_ROLE_KEYS };
-  }, [isCourseViewAllowed, querySettings]);
+  const { isCourseViewAllowed, isLibraryViewAllowed } = useViewTeamPermissions();
+  const { isCourseEnabled } = useCourseAuthoringFlag();
 
   const {
-    data: { results: roleAssignments, count } = { results: [], count: 0 },
+    data: { results, count } = EMPTY_ASSIGNMENTS,
     isLoading: isLoadingAllRoleAssignments,
     error,
     refetch,
-  } = useAllRoleAssignments(effectiveQuerySettings);
+  } = useAllRoleAssignments(
+    isCourseViewAllowed ? undefined : LIBRARY_ROLE_KEYS,
+    isCourseViewAllowed || isLibraryViewAllowed,
+  );
+
+  // Hide course rows whose course-authoring flag is disabled; libraries and
+  // Django-managed roles are never flag-gated.
+  const roleAssignments = useMemo(
+    () => results.filter((assignment) => !assignment.scope?.startsWith('course') || isCourseEnabled(assignment.scope)),
+    [results, isCourseEnabled],
+  );
 
   const initialFilters = presetScope ? [{ id: 'scope', value: [presetScope] }] : [];
 
@@ -67,27 +83,25 @@ const TeamMembersTable = ({ presetScope }: TeamMembersTableProps) => {
     }
   }, [error, showErrorToast, refetch]);
 
-  const pageCount = Math.ceil(count / TABLE_DEFAULT_PAGE_SIZE);
-
-  const fetchData = useMemo(() => debounce(handleTableFetch, 500), [handleTableFetch]);
-
-  useEffect(() => () => fetchData.cancel(), [fetchData]);
-
   return (
     <div className="authz-module">
+      {count > TABLE_MAX_SUPPORTED_RECORDS && (
+        <Alert variant="warning">
+          {intl.formatMessage(baseMessages['authz.table.max.records.warning'], {
+            maxRecords: TABLE_MAX_SUPPORTED_RECORDS,
+            count,
+          })}
+        </Alert>
+      )}
       <DataTable
         isFilterable
         isPaginated
         isSortable
-        manualFilters
-        manualPagination
-        manualSortBy
         numBreakoutFilters={4}
-        fetchData={fetchData}
         data={roleAssignments}
-        itemCount={count}
-        pageCount={pageCount}
+        itemCount={roleAssignments.length}
         initialState={{ pageSize: TABLE_DEFAULT_PAGE_SIZE, filters: initialFilters }}
+        initialTableOptions={TABLE_OPTIONS}
         isLoading={isLoadingAllRoleAssignments}
         additionalColumns={[
           {
@@ -103,7 +117,7 @@ const TeamMembersTable = ({ presetScope }: TeamMembersTableProps) => {
                 Header: intl.formatMessage(messages['authz.team.members.table.column.name.title']),
                 accessor: 'username',
                 Cell: NameCell,
-                filter: 'text',
+                filter: filterByUserText,
                 Filter: TextFilter,
                 filterOrder: 1,
               },

@@ -1,31 +1,25 @@
 import { useMemo } from 'react';
 import { useIntl } from '@edx/frontend-platform/i18n';
 import { Person } from '@openedx/paragon/icons';
-import { useViewTeamPermissions } from '@src/authz-module/hooks/useViewTeamPermissions';
-import { useCourseAuthoringFlag } from '@src/authz-module/hooks/useCourseAuthoringFlag';
-import { CONTEXT_TYPES } from '@src/authz-module/constants';
 import MultipleChoiceFilter from './MultipleChoiceFilter';
-import { MultipleChoiceFilterProps } from './types';
+import { FilterColumnProps, MultipleChoiceFilterProps } from './types';
 import { getRolesFiltersOptions } from '../constants';
 
-type RolesFilterProps = Omit<MultipleChoiceFilterProps, 'filterChoices' | 'isSearchable' | 'onSearchChange'>;
+type RolesFilterProps = Omit<MultipleChoiceFilterProps, 'filterChoices' | 'isSearchable' | 'onSearchChange'>
+& FilterColumnProps;
 
 const RolesFilter = ({
-  filterButtonText, filterValue, setFilter, disabled,
+  filterButtonText, filterValue, setFilter, disabled, preFilteredRows, id,
 }: RolesFilterProps) => {
   const intl = useIntl();
-  const { isCourseViewAllowed, isLibraryViewAllowed, isLoading } = useViewTeamPermissions();
-  const { isCourseAuthoringEnabled, isLoading: isFlagLoading } = useCourseAuthoringFlag();
 
+  // Offer only the roles present in the table rows (react-table's preFilteredRows),
+  // so the choices always match the data being filtered.
   const rolesOptions = useMemo(() => {
-    if (isLoading || isFlagLoading) { return []; }
-    return getRolesFiltersOptions(intl).filter((option) => {
-      // Authoring (course) roles require both view permission and the course-authoring flag.
-      if (option.contextType === CONTEXT_TYPES.COURSE) { return isCourseViewAllowed && isCourseAuthoringEnabled; }
-      if (option.contextType === CONTEXT_TYPES.LIBRARY) { return isLibraryViewAllowed; }
-      return false;
-    });
-  }, [intl, isCourseViewAllowed, isLibraryViewAllowed, isCourseAuthoringEnabled, isLoading, isFlagLoading]);
+    const presentRoles = new Set((preFilteredRows ?? []).map((row) => row.values[id ?? 'role']));
+    return getRolesFiltersOptions(intl).filter((option) => presentRoles.has(option.value));
+  }, [intl, preFilteredRows, id]);
+
   return (
     <MultipleChoiceFilter
       filterButtonText={filterButtonText}

@@ -47,6 +47,11 @@ const messages = defineMessages(
       defaultMessage: 'Retry',
       description: 'Label for retry button.',
     },
+    'authz.table.max.records.warning': {
+      id: 'authz.table.max.records.warning',
+      defaultMessage: 'Only the first {maxRecords, number} of {count, number} records are shown.',
+      description: 'Warning shown above a table when the total number of records exceeds the maximum supported for client-side management',
+    },
   },
 );
 

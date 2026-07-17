@@ -1,52 +1,9 @@
-import { screen } from '@testing-library/react';
+import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { renderWrapper } from '@src/setupTest';
-import { useValidateUserPermissionsNonSuspense } from '@src/data/hooks';
-import { useScopes } from '@src/authz-module/data/hooks';
-import { useCourseAuthoringFlag } from '@src/authz-module/hooks/useCourseAuthoringFlag';
-import { CONTENT_COURSE_PERMISSIONS, CONTENT_LIBRARY_PERMISSIONS } from '@src/authz-module/roles-permissions';
 import ScopesFilter from './ScopesFilter';
 
-jest.mock('@src/data/hooks', () => ({
-  useValidateUserPermissionsNonSuspense: jest.fn(),
-}));
-
-jest.mock('@src/authz-module/hooks/useCourseAuthoringFlag', () => ({
-  useCourseAuthoringFlag: jest.fn(),
-}));
-
-const mockUsePermissions = useValidateUserPermissionsNonSuspense as jest.Mock;
-const mockUseCourseAuthoringFlag = useCourseAuthoringFlag as jest.Mock;
-
-jest.mock('@src/authz-module/data/hooks', () => ({
-  useScopes: jest.fn(() => ({
-    data: {
-      pages: [
-        {
-          results: [
-            {
-              externalKey: 'course-v1:org+course+run',
-              displayName: 'Test Course',
-              org: { shortName: 'TestOrg' },
-            },
-            {
-              externalKey: 'lib:org:library',
-              displayName: 'Test Library',
-              org: { shortName: 'TestOrg' },
-            },
-          ],
-        },
-      ],
-    },
-  })),
-}));
-
-const mockUseScopes = useScopes as jest.Mock;
-
-const permissionsData = ({ library, course }: { library?: boolean; course?: boolean }) => [
-  { action: CONTENT_LIBRARY_PERMISSIONS.VIEW_LIBRARY_TEAM, allowed: !!library },
-  { action: CONTENT_COURSE_PERMISSIONS.VIEW_COURSE_TEAM, allowed: !!course },
-];
+const rowsWithScopes = (scopes: string[]) => scopes.map((scope) => ({ values: { scope } }));
 
 describe('ScopesFilter', () => {
   const defaultProps = {
@@ -54,16 +11,17 @@ describe('ScopesFilter', () => {
     filterValue: [],
     setFilter: jest.fn(),
     disabled: false,
+    id: 'scope',
+    preFilteredRows: rowsWithScopes(['course-v1:org+course+run', 'lib:org:library']),
+  };
+
+  const openDropdown = async (user: ReturnType<typeof userEvent.setup>) => {
+    await user.click(screen.getByRole('button', { name: /Scopes/i }));
+    return within(await screen.findByRole('group', { name: 'Scopes' }));
   };
 
   beforeEach(() => {
     jest.clearAllMocks();
-    mockUsePermissions.mockReturnValue({ data: permissionsData({ library: true, course: true }) });
-    mockUseCourseAuthoringFlag.mockReturnValue({
-      isCourseAuthoringEnabled: true,
-      isCourseEnabled: () => true,
-      isLoading: false,
-    });
   });
 
   it('renders without crashing', () => {
@@ -81,63 +39,64 @@ describe('ScopesFilter', () => {
     expect(screen.getByText('Select Scopes')).toBeInTheDocument();
   });
 
-  it('handles search input', async () => {
+  it('lists the scopes present in the table rows grouped by type', async () => {
     const user = userEvent.setup();
     renderWrapper(<ScopesFilter {...defaultProps} />);
-    const searchInputs = screen.queryAllByRole('textbox');
-    if (searchInputs.length > 0) {
-      await user.type(searchInputs[0], 'test search');
-      expect(searchInputs[0]).toHaveValue('test search');
-    }
+    const menu = await openDropdown(user);
+    expect(menu.getByText('Courses')).toBeInTheDocument();
+    expect(menu.getByText('Libraries')).toBeInTheDocument();
+    expect(menu.getByLabelText('course-v1:org+course+run')).toBeInTheDocument();
+    expect(menu.getByLabelText('lib:org:library')).toBeInTheDocument();
   });
 
-  it('calls setFilter when filter changes', () => {
-    const mockSetFilter = jest.fn();
-    renderWrapper(<ScopesFilter {...defaultProps} setFilter={mockSetFilter} />);
-    expect(screen.getByText('Scopes')).toBeInTheDocument();
-  });
-
-  it('fetches all scope types when the user can view courses', () => {
-    renderWrapper(<ScopesFilter {...defaultProps} />);
-    expect(mockUseScopes).toHaveBeenCalledWith(
-      expect.not.objectContaining({ scopeType: 'library' }),
+  it('excludes global (non course/library) scopes from the choices', async () => {
+    const user = userEvent.setup();
+    renderWrapper(
+      <ScopesFilter {...defaultProps} preFilteredRows={rowsWithScopes(['lib:org:library', 'global'])} />,
     );
+    const menu = await openDropdown(user);
+    expect(menu.getByLabelText('lib:org:library')).toBeInTheDocument();
+    expect(menu.queryByLabelText('global')).not.toBeInTheDocument();
   });
 
-  it('fetches only library scopes when the user cannot view courses', () => {
-    mockUsePermissions.mockReturnValue({ data: permissionsData({ library: true, course: false }) });
-    renderWrapper(<ScopesFilter {...defaultProps} />);
-    expect(mockUseScopes).toHaveBeenCalledWith(
-      expect.objectContaining({ scopeType: 'library' }),
+  it('deduplicates scopes that appear in several rows', async () => {
+    const user = userEvent.setup();
+    renderWrapper(
+      <ScopesFilter {...defaultProps} preFilteredRows={rowsWithScopes(['lib:org:library', 'lib:org:library'])} />,
     );
+    const menu = await openDropdown(user);
+    expect(menu.getAllByLabelText('lib:org:library')).toHaveLength(1);
   });
 
-  it('defaults to showing only library scopes while permissions are loading', () => {
-    mockUsePermissions.mockReturnValue({ data: undefined, isLoading: true });
-    renderWrapper(<ScopesFilter {...defaultProps} />);
-    expect(mockUseScopes).toHaveBeenCalledWith(
-      expect.objectContaining({ scopeType: 'library' }),
-    );
-  });
-
-  it('lists course scopes whose course-authoring flag is enabled', async () => {
+  it('filters the choices with the search input', async () => {
     const user = userEvent.setup();
     renderWrapper(<ScopesFilter {...defaultProps} />);
     await user.click(screen.getByRole('button', { name: /Scopes/i }));
-    expect(await screen.findByText('Test Library')).toBeInTheDocument();
-    expect(screen.getByText('Test Course')).toBeInTheDocument();
+    const searchInput = screen.getAllByRole('textbox')[0];
+    await user.type(searchInput, 'lib:');
+    const menu = within(await screen.findByRole('group', { name: 'Scopes' }));
+    expect(menu.getByLabelText('lib:org:library')).toBeInTheDocument();
+    expect(menu.queryByLabelText('course-v1:org+course+run')).not.toBeInTheDocument();
   });
 
-  it('hides course scopes whose course-authoring flag is disabled but keeps libraries', async () => {
+  it('calls setFilter with the selected scope when a scope is checked', async () => {
     const user = userEvent.setup();
-    mockUseCourseAuthoringFlag.mockReturnValue({
-      isCourseAuthoringEnabled: false,
-      isCourseEnabled: () => false,
-      isLoading: false,
-    });
-    renderWrapper(<ScopesFilter {...defaultProps} />);
-    await user.click(screen.getByRole('button', { name: /Scopes/i }));
-    expect(await screen.findByText('Test Library')).toBeInTheDocument();
-    expect(screen.queryByText('Test Course')).not.toBeInTheDocument();
+    const setFilter = jest.fn();
+    renderWrapper(<ScopesFilter {...defaultProps} setFilter={setFilter} />);
+    const menu = await openDropdown(user);
+    await user.click(menu.getByLabelText('lib:org:library'));
+    expect(setFilter).toHaveBeenCalledWith(
+      ['lib:org:library'],
+      expect.objectContaining({ value: 'lib:org:library' }),
+    );
+  });
+
+  it('renders safely when preFilteredRows is not provided', async () => {
+    const user = userEvent.setup();
+    const { preFilteredRows, ...standaloneProps } = defaultProps;
+    renderWrapper(<ScopesFilter {...standaloneProps} />);
+    const menu = await openDropdown(user);
+    expect(menu.queryByText('Courses')).not.toBeInTheDocument();
+    expect(menu.queryByText('Libraries')).not.toBeInTheDocument();
   });
 });

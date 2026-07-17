@@ -1,5 +1,6 @@
 import { getAuthenticatedHttpClient } from '@edx/frontend-platform/auth';
 import { mockHttpClient } from '@src/setupTest';
+import { TABLE_MAX_SUPPORTED_RECORDS } from '@src/authz-module/constants';
 import {
   getTeamMembers,
   getUserAssignedRoles,
@@ -98,40 +99,47 @@ describe('API functions', () => {
         get: jest.fn().mockResolvedValue(mockResponse),
       });
 
-      const result = await getUserAssignedRoles('testuser', mockQuerySettings);
+      const result = await getUserAssignedRoles('testuser');
 
       expect(result.results).toHaveLength(1);
       expect(result.count).toBe(1);
       expect(getAuthenticatedHttpClient).toHaveBeenCalled();
     });
 
-    it('should handle all query parameters including organizations', async () => {
-      const mockResponse = { data: { results: [], count: 0 } };
+    it('should request the maximum supported records and pass the roles restriction', async () => {
+      const mockResponse = { data: { results: [], count: 0, next: null } };
       const mockGet = jest.fn().mockResolvedValue(mockResponse);
       mockHttpClient().mockReturnValue({
         get: mockGet,
       });
 
-      const queryWithAllParams = {
-        roles: 'admin',
-        organizations: 'edx,mit',
-        search: 'library',
-        sortBy: 'role',
-        order: 'asc' as const,
-        scopes: null,
-        pageSize: 15,
-        pageIndex: 1,
-      };
+      await getUserAssignedRoles('testuser', 'admin,editor');
 
-      await getUserAssignedRoles('testuser', queryWithAllParams);
-
-      expect(mockGet).toHaveBeenCalled();
+      expect(mockGet).toHaveBeenCalledTimes(1);
       const calledUrl = mockGet.mock.calls[0][0];
-      expect(calledUrl.toString()).toContain('roles=admin');
-      expect(calledUrl.toString()).toContain('orgs=edx%2Cmit');
-      expect(calledUrl.toString()).toContain('search=library');
-      expect(calledUrl.toString()).toContain('sort_by=role');
-      expect(calledUrl.toString()).toContain('order=asc');
+      expect(calledUrl.toString()).toContain('roles=admin%2Ceditor');
+      expect(calledUrl.toString()).toContain(`page_size=${TABLE_MAX_SUPPORTED_RECORDS}`);
+      expect(calledUrl.toString()).toContain('page=1');
+    });
+
+    it('should drain every page until next is null', async () => {
+      const mockGet = jest.fn()
+        .mockResolvedValueOnce({
+          data: { results: [{ id: '1', role: 'admin', scope: 'lib:a' }], count: 2, next: 'http://lms/api?page=2' },
+        })
+        .mockResolvedValueOnce({
+          data: { results: [{ id: '2', role: 'editor', scope: 'lib:b' }], count: 2, next: null },
+        });
+      mockHttpClient().mockReturnValue({
+        get: mockGet,
+      });
+
+      const result = await getUserAssignedRoles('testuser');
+
+      expect(mockGet).toHaveBeenCalledTimes(2);
+      expect(mockGet.mock.calls[1][0].toString()).toContain('page=2');
+      expect(result.results).toHaveLength(2);
+      expect(result.count).toBe(2);
     });
   });
 

@@ -5,11 +5,11 @@ import {
 import { useIntl } from '@edx/frontend-platform/i18n';
 import { AppContext } from '@edx/frontend-platform/react';
 import {
-  Container, DataTable,
+  Alert, Container, DataTable,
 } from '@openedx/paragon';
 import TableFooter from '@src/authz-module/components/TableFooter/TableFooter';
 import {
-  AUTHZ_HOME_PATH, TABLE_DEFAULT_PAGE_SIZE,
+  AUTHZ_HOME_PATH, TABLE_DEFAULT_PAGE_SIZE, TABLE_MAX_SUPPORTED_RECORDS,
 } from '@src/authz-module/constants';
 import AuthZLayout from '@src/authz-module/components/AuthZLayout';
 import { useNavigate, useParams } from 'react-router-dom';
@@ -22,7 +22,7 @@ import {
   OrgCell, RoleCell, ScopeCell, PermissionsCell, ViewAllPermissionsCell,
   createActionsCell,
 } from '@src/authz-module/components/TableCells';
-import { useQuerySettings } from '@src/authz-module/hooks/useQuerySettings';
+import { useCourseAuthoringFlag } from '@src/authz-module/hooks/useCourseAuthoringFlag';
 import { useRevokeUserRoles, useUserAssignedRoles } from '@src/authz-module/data/hooks';
 import { RoleToDelete } from '@src/types';
 import { useToastManager } from '@src/components/ToastManager/ToastManagerContext';
@@ -34,6 +34,15 @@ import messages from './messages';
 import ConfirmDeletionModal from '../components/ConfirmDeletionModal';
 import { getCellHeader, getScopeManageActionPermission } from '../utils';
 
+// Stable fallback while the query has no data yet: a fresh object here would give
+// react-table a new `data` identity on every render, retriggering its auto-reset
+// effects in an endless render loop.
+const EMPTY_ASSIGNMENTS = { results: [], count: 0 };
+
+// Keep active filters and sorting when the assignments list is refetched
+// (e.g. after a role revocation invalidates the query).
+const TABLE_OPTIONS = { autoResetFilters: false, autoResetSortBy: false };
+
 const AuditUserPage = () => {
   const { formatMessage } = useIntl();
   const [columnsWithFiltersApplied, setColumnsWithFiltersApplied] = useState<string[]>([]);
@@ -43,18 +52,12 @@ const AuditUserPage = () => {
   const {
     isLoading: isLoadingUser, data: user, isError: isErrorUser, error: errorUser,
   } = useUserAccount(username);
-  const { querySettings, handleTableFetch } = useQuerySettings();
-
   const { isCourseViewAllowed } = useViewTeamPermissions();
-
-  const effectiveQuerySettings = useMemo(() => {
-    if (isCourseViewAllowed || querySettings.roles) { return querySettings; }
-    return { ...querySettings, roles: LIBRARY_ROLE_KEYS };
-  }, [isCourseViewAllowed, querySettings]);
+  const { isCourseEnabled } = useCourseAuthoringFlag();
 
   const {
-    isLoading: isLoadingUserAssignments, data: { results: userAssignments, count } = { results: [], count: 0 },
-  } = useUserAssignedRoles(username, effectiveQuerySettings);
+    isLoading: isLoadingUserAssignments, data: { results: userAssignments, count } = EMPTY_ASSIGNMENTS,
+  } = useUserAssignedRoles(username, isCourseViewAllowed ? undefined : LIBRARY_ROLE_KEYS);
   const [roleToDelete, setRoleToDelete] = useState<RoleToDelete | null>(null);
   const [showConfirmDeletionModal, setShowConfirmDeletionModal] = useState(false);
   const {
@@ -62,19 +65,26 @@ const AuditUserPage = () => {
   } = useToastManager();
   const { mutate: revokeUserRoles, isPending: isRevokingUserRolePending } = useRevokeUserRoles();
 
+  // Hide course rows whose course-authoring flag is disabled; libraries and
+  // Django-managed roles are never flag-gated.
+  const visibleAssignments = useMemo(
+    () => userAssignments.filter((assignment) => !assignment.scope?.startsWith('course') || isCourseEnabled(assignment.scope)),
+    [userAssignments, isCourseEnabled],
+  );
+
   const deletePermissions = useMemo(() => {
-    const uniqueScopes = [...new Set(userAssignments.map(assignment => assignment.scope))];
+    const uniqueScopes = [...new Set(visibleAssignments.map(assignment => assignment.scope))];
     return uniqueScopes.map(scope => getScopeManageActionPermission(scope));
-  }, [userAssignments]);
+  }, [visibleAssignments]);
 
   const {
     data: permissionsToManageScope,
   } = useValidateUserPermissionsNonSuspense(deletePermissions);
 
   const rowsWithPermissions = useMemo(() => {
-    if (!permissionsToManageScope) { return userAssignments; }
+    if (!permissionsToManageScope) { return visibleAssignments; }
 
-    return userAssignments.map(assignment => {
+    return visibleAssignments.map(assignment => {
       const canManageScope = permissionsToManageScope.some(
         permission => permission.scope === assignment.scope && permission.allowed,
       );
@@ -83,9 +93,7 @@ const AuditUserPage = () => {
         canManageScope,
       };
     });
-  }, [userAssignments, permissionsToManageScope]);
-
-  const fetchData = useMemo(() => handleTableFetch, [handleTableFetch]);
+  }, [visibleAssignments, permissionsToManageScope]);
 
   useEffect(() => {
     if (!user && !isLoadingUser) {
@@ -160,8 +168,6 @@ const AuditUserPage = () => {
     },
   ], [formatMessage, columnsWithFiltersApplied]);
 
-  const pageCount = Math.ceil(count / TABLE_DEFAULT_PAGE_SIZE);
-
   const handleCloseConfirmDeletionModal = () => {
     setRoleToDelete(null);
     setShowConfirmDeletionModal(false);
@@ -177,14 +183,7 @@ const AuditUserPage = () => {
     };
 
     const runRevokeRole = (variables) => {
-      const variablesData = {
-        data: {
-          ...variables.data,
-          querySettings,
-        },
-
-      };
-      revokeUserRoles(variablesData, {
+      revokeUserRoles(variables, {
         onSuccess: (response) => {
           const { errors } = response;
 
@@ -256,18 +255,22 @@ const AuditUserPage = () => {
         }
       >
         <Container className="bg-light-200 p-5">
+          {count > TABLE_MAX_SUPPORTED_RECORDS && (
+            <Alert variant="warning">
+              {formatMessage(baseMessages['authz.table.max.records.warning'], {
+                maxRecords: TABLE_MAX_SUPPORTED_RECORDS,
+                count,
+              })}
+            </Alert>
+          )}
           <DataTable
             isPaginated
             isFilterable
             isSortable
-            manualPagination
             data={rowsWithPermissions}
-            manualFilters
-            manualSortBy
-            fetchData={fetchData}
-            itemCount={count}
-            pageCount={pageCount}
+            itemCount={rowsWithPermissions.length}
             initialState={{ pageSize: TABLE_DEFAULT_PAGE_SIZE }}
+            initialTableOptions={TABLE_OPTIONS}
             additionalColumns={additionalColumns}
             columns={columns}
             isLoading={isLoadingUserAssignments}

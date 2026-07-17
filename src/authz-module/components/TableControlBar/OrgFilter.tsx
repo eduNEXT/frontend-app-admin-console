@@ -4,13 +4,14 @@ import { useOrgs } from '@src/authz-module/data/hooks';
 import { useViewTeamPermissions } from '@src/authz-module/hooks/useViewTeamPermissions';
 import { useCourseAuthoringFlag } from '@src/authz-module/hooks/useCourseAuthoringFlag';
 import { DEFAULT_FILTER_PAGE_SIZE } from '@src/authz-module/constants';
-import { MultipleChoiceFilterProps } from './types';
+import { FilterColumnProps, MultipleChoiceFilterProps } from './types';
 import MultipleChoiceFilter from './MultipleChoiceFilter';
 
-type OrgFilterProps = Omit<MultipleChoiceFilterProps, 'filterChoices' | 'isSearchable' | 'onSearchChange'>;
+type OrgFilterProps = Omit<MultipleChoiceFilterProps, 'filterChoices' | 'isSearchable' | 'onSearchChange'>
+& FilterColumnProps;
 
 const OrgFilter = ({
-  filterButtonText, filterValue, setFilter, disabled,
+  filterButtonText, filterValue, setFilter, disabled, preFilteredRows, id,
 }: OrgFilterProps) => {
   const [searchValue, setSearchValue] = React.useState<string | undefined>(undefined);
   const { isLibraryViewAllowed, isLoading } = useViewTeamPermissions();
@@ -26,12 +27,24 @@ const OrgFilter = ({
   // permissions or flag states are still loading (default to showing every org).
   const filterByAuthoringFlag = !isLoading && !isFlagLoading && !isLibraryViewAllowed;
 
-  const filterChoices = useMemo(() => (orgsData?.results ?? [])
-    .filter((org) => !filterByAuthoringFlag || isOrgAuthoringEnabled(org.shortName))
-    .map((org) => ({
-      displayName: org.name,
-      value: org.shortName,
-    })), [orgsData, filterByAuthoringFlag, isOrgAuthoringEnabled]);
+  const filterChoices = useMemo(() => {
+    // When rendered as a column Filter, offer only the orgs present in the table
+    // rows (react-table's preFilteredRows), so the choices always match the data
+    // being filtered. Standalone usages (e.g. the wizard) fall back to the org API.
+    if (preFilteredRows) {
+      const search = searchValue?.toLowerCase();
+      return [...new Set(preFilteredRows.map((row) => row.values[id ?? 'org']))]
+        .filter((org) => !!org && (!search || org.toLowerCase().includes(search)))
+        .sort()
+        .map((org) => ({ displayName: org, value: org }));
+    }
+    return (orgsData?.results ?? [])
+      .filter((org) => !filterByAuthoringFlag || isOrgAuthoringEnabled(org.shortName))
+      .map((org) => ({
+        displayName: org.name,
+        value: org.shortName,
+      }));
+  }, [preFilteredRows, id, searchValue, orgsData, filterByAuthoringFlag, isOrgAuthoringEnabled]);
 
   const handleSearchChange = (value: string) => {
     setSearchValue(value);

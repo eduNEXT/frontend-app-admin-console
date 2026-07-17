@@ -6,14 +6,16 @@ import messages from '../messages';
 const Footer = () => {
   const { formatMessage } = useIntl();
   const {
-    pageCount, gotoPage, state, itemCount, rows,
+    pageCount, gotoPage, state, rows, page,
   // @ts-ignore-next-line - Paragon's DataTableContext is not typed
   } = useContext<DataTableContext>(DataTableContext);
   const { pageIndex } = state;
+  // Client-side tables: `page` holds the current page's rows, `rows` the full filtered set.
+  const pageRows = page || rows;
   return (
     <TableFooter>
       <span>
-        {formatMessage(messages['authz.table.footer.items.showing.text'], { pageSize: rows.length, itemCount })}
+        {formatMessage(messages['authz.table.footer.items.showing.text'], { pageSize: pageRows.length, itemCount: rows.length })}
       </span>
       <Pagination
         variant="reduced"

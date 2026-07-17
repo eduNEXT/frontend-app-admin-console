@@ -5,6 +5,8 @@ import { initializeMockApp } from '@edx/frontend-platform/testing';
 import { renderWrapper } from '@src/setupTest';
 import Footer from './TableFooter';
 
+const makeRows = (count: number) => Array.from({ length: count }, (_, index) => ({ id: index + 1 }));
+
 describe('TableFooter', () => {
   const mockGotoPage = jest.fn();
 
@@ -15,12 +17,8 @@ describe('TableFooter', () => {
       pageIndex: 0,
       pageSize: 10,
     },
-    itemCount: 42,
-    rows: [
-      { id: 1, name: 'Item 1' },
-      { id: 2, name: 'Item 2' },
-      { id: 3, name: 'Item 3' },
-    ],
+    rows: makeRows(42),
+    page: makeRows(3),
   };
 
   const renderFooter = (contextOverrides = {}) => {
@@ -58,15 +56,9 @@ describe('TableFooter', () => {
     });
 
     it('displays showing text with different row count', () => {
-      const moreRows = [
-        ...defaultDataTableContext.rows,
-        { id: 4, name: 'Item 4' },
-        { id: 5, name: 'Item 5' },
-      ];
-
       renderFooter({
-        rows: moreRows,
-        itemCount: 100,
+        rows: makeRows(100),
+        page: makeRows(5),
       });
 
       expect(screen.getByText('Showing 5 of 100.')).toBeInTheDocument();
@@ -78,8 +70,8 @@ describe('TableFooter', () => {
           pageIndex: 4,
           pageSize: 10,
         },
-        rows: [{ id: 41, name: 'Item 41' }, { id: 42, name: 'Item 42' }],
-        itemCount: 42,
+        rows: makeRows(42),
+        page: makeRows(2),
       });
 
       expect(screen.getByText('Showing 2 of 42.')).toBeInTheDocument();
@@ -153,7 +145,8 @@ describe('TableFooter', () => {
           pageIndex: 0,
           pageSize: 10,
         },
-        itemCount: 3,
+        rows: makeRows(3),
+        page: makeRows(3),
       });
 
       expect(screen.getByText('Showing 3 of 3.')).toBeInTheDocument();
@@ -165,7 +158,7 @@ describe('TableFooter', () => {
     it('handles empty results', () => {
       renderFooter({
         rows: [],
-        itemCount: 0,
+        page: [],
         pageCount: 1,
         state: {
           pageIndex: 0,
@@ -183,7 +176,8 @@ describe('TableFooter', () => {
           pageIndex: 5,
           pageSize: 10,
         },
-        itemCount: 95,
+        rows: makeRows(95),
+        page: makeRows(3),
       });
 
       const currentPageButton = screen.getByRole('button', { name: '6 of 10' });

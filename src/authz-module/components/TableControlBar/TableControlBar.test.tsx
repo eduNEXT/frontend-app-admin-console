@@ -98,12 +98,13 @@ describe('TableControlBar', () => {
     const contextWithRolesFilter = {
       columns: [
         {
-          id: 'roles',
+          id: 'role',
           Header: 'Roles',
           Filter: RolesFilter,
           canFilter: true,
           filterButtonText: 'Select Roles',
           setFilter: jest.fn(),
+          preFilteredRows: [{ values: { role: 'course_admin' } }],
         },
       ],
     };

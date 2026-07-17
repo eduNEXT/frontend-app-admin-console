@@ -120,7 +120,7 @@ const mockUserAssignments = {
       permissionCount: 50,
     },
   ],
-  next: 'http://api.example.com/userAssignments?page=2',
+  next: null,
   previous: null,
 };
 
@@ -760,7 +760,7 @@ describe('useAllRoleAssignments', () => {
 
   it('fetches and returns role assignments', async () => {
     const { result } = renderHook(
-      () => useAllRoleAssignments(mockQuerySettings),
+      () => useAllRoleAssignments(),
       { wrapper: createWrapper() },
     );
     await waitFor(() => {
@@ -779,7 +779,7 @@ describe('useAllRoleAssignments', () => {
       })),
     });
     const { result } = renderHook(
-      () => useAllRoleAssignments(mockQuerySettings),
+      () => useAllRoleAssignments(),
       { wrapper: createWrapper() },
     );
     await waitFor(() => {
@@ -799,14 +799,14 @@ describe('useUserAssignedRoles', () => {
       get: jest.fn().mockResolvedValue({ data: mockUserAssignments }),
     });
 
-    const { result } = renderHook(() => useUserAssignedRoles('john.doe', mockQuerySettings), {
+    const { result } = renderHook(() => useUserAssignedRoles('john.doe'), {
       wrapper: createWrapper(),
     });
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
     expect(getAuthenticatedHttpClient).toHaveBeenCalled();
-    expect(result.current.data).toEqual(mockUserAssignments);
+    expect(result.current.data?.results).toEqual(mockUserAssignments.results);
     expect(result.current.data?.results).toHaveLength(3);
     expect(result.current.data?.count).toBe(3);
   });
@@ -816,7 +816,7 @@ describe('useUserAssignedRoles', () => {
       get: jest.fn().mockResolvedValue({ data: mockEmptyUserAssignments }),
     });
 
-    const { result } = renderHook(() => useUserAssignedRoles('newuser', mockQuerySettings), {
+    const { result } = renderHook(() => useUserAssignedRoles('newuser'), {
       wrapper: createWrapper(),
     });
 
@@ -826,25 +826,19 @@ describe('useUserAssignedRoles', () => {
     expect(result.current.data?.count).toBe(0);
   });
 
-  it('applies query settings for filtering and pagination', async () => {
-    const filteredQuerySettings = {
-      ...mockQuerySettings,
-      roles: 'library_admin',
-      search: 'library',
-      pageSize: 5,
-      pageIndex: 1,
-    };
-
+  it('passes the roles restriction to the API', async () => {
+    const mockGet = jest.fn().mockResolvedValue({ data: mockFilteredUserAssignments });
     mockHttpClient().mockReturnValue({
-      get: jest.fn().mockResolvedValue({ data: mockFilteredUserAssignments }),
+      get: mockGet,
     });
 
-    const { result } = renderHook(() => useUserAssignedRoles('john.doe', filteredQuerySettings), {
+    const { result } = renderHook(() => useUserAssignedRoles('john.doe', 'library_admin'), {
       wrapper: createWrapper(),
     });
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
+    expect(mockGet.mock.calls[0][0].toString()).toContain('roles=library_admin');
     expect(result.current.data?.results).toHaveLength(1);
     expect(result.current.data?.results[0].role).toBe('library_admin');
   });
@@ -854,7 +848,7 @@ describe('useUserAssignedRoles', () => {
       get: jest.fn().mockRejectedValue(new Error('User not found')),
     });
 
-    const { result } = renderHook(() => useUserAssignedRoles('nonexistent.user', mockQuerySettings), {
+    const { result } = renderHook(() => useUserAssignedRoles('nonexistent.user'), {
       wrapper: createWrapper(),
     });
 
@@ -870,7 +864,7 @@ describe('useUserAssignedRoles', () => {
       get: mockGet,
     });
 
-    const { result } = renderHook(() => useUserAssignedRoles('john.doe', mockQuerySettings), {
+    const { result } = renderHook(() => useUserAssignedRoles('john.doe'), {
       wrapper: createWrapper(),
     });
 
@@ -883,7 +877,7 @@ describe('useUserAssignedRoles', () => {
     expect(mockGet).toHaveBeenCalledTimes(1);
   });
 
-  it('updates when query settings change', async () => {
+  it('updates when the roles restriction changes', async () => {
     const mockGet = jest.fn()
       .mockResolvedValueOnce({ data: mockUserAssignments })
       .mockResolvedValueOnce({ data: mockFilteredUserAssignments });
@@ -893,23 +887,17 @@ describe('useUserAssignedRoles', () => {
     });
 
     const { result, rerender } = renderHook(
-      ({ querySettings }) => useUserAssignedRoles('john.doe', querySettings),
+      ({ roles }: { roles?: string }) => useUserAssignedRoles('john.doe', roles),
       {
         wrapper: createWrapper(),
-        initialProps: { querySettings: mockQuerySettings },
+        initialProps: { roles: undefined },
       },
     );
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     expect(result.current.data?.count).toBe(3);
 
-    rerender({
-      querySettings: {
-        ...mockQuerySettings,
-        roles: 'library_admin',
-        pageSize: 1,
-      },
-    });
+    rerender({ roles: 'library_admin' });
 
     await waitFor(() => expect(result.current.data?.count).toBe(1));
     expect(mockGet).toHaveBeenCalledTimes(2);

@@ -63,6 +63,11 @@ export const DJANGO_MANAGED_ROLES = ['django.superuser', 'django.globalstaff'];
 
 export const TABLE_DEFAULT_PAGE_SIZE = 10;
 
+// Maximum number of records fetched for client-side table management (filtering,
+// sorting, and pagination happen in the browser). Beyond this the tables show a
+// warning that only the first TABLE_MAX_SUPPORTED_RECORDS records are available.
+export const TABLE_MAX_SUPPORTED_RECORDS = 10000;
+
 export const DEFAULT_FILTER_PAGE_SIZE = 5;
 export const ADMIN_ROLES = ['course_admin', 'library_admin'];
 

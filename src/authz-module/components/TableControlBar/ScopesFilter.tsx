@@ -1,49 +1,41 @@
 import { useMemo, useState } from 'react';
 import { useIntl } from '@edx/frontend-platform/i18n';
 import { LocationOn } from '@openedx/paragon/icons';
-import { useViewTeamPermissions } from '@src/authz-module/hooks/useViewTeamPermissions';
-import { useCourseAuthoringFlag } from '@src/authz-module/hooks/useCourseAuthoringFlag';
-import { useScopes } from '@src/authz-module/data/hooks';
-import { DEFAULT_FILTER_PAGE_SIZE } from '@src/authz-module/constants';
-import { MultipleChoiceFilterProps } from './types';
+import { FilterColumnProps, MultipleChoiceFilterProps } from './types';
 import MultipleChoiceFilter from './MultipleChoiceFilter';
 import { RESOURCE_ICONS } from '../constants';
 import messages from '../messages';
 
-type ScopesFilterProps = Omit<MultipleChoiceFilterProps, 'filterChoices' | 'isSearchable' | 'onSearchChange'>;
+type ScopesFilterProps = Omit<MultipleChoiceFilterProps, 'filterChoices' | 'isSearchable' | 'onSearchChange'>
+& FilterColumnProps;
 
 const ScopesFilter = ({
-  filterButtonText, filterValue, setFilter, disabled,
+  filterButtonText, filterValue, setFilter, disabled, preFilteredRows, id,
 }: ScopesFilterProps) => {
   const { formatMessage } = useIntl();
   const [searchValue, setSearchValue] = useState<string | undefined>(undefined);
 
-  const { isCourseViewAllowed } = useViewTeamPermissions();
-  const { isCourseEnabled } = useCourseAuthoringFlag();
-
-  const { data: scopesData } = useScopes({
-    search: searchValue,
-    pageSize: DEFAULT_FILTER_PAGE_SIZE,
-    ...(isCourseViewAllowed ? {} : { scopeType: 'library' }),
-  });
-
-  const filterChoices = useMemo(() => (scopesData?.pages?.flatMap((p) => p.results) ?? [])
-    // Libraries are always available; courses only when the authoring flag is enabled for them.
-    .filter((scope) => scope.externalKey?.startsWith('lib') || isCourseEnabled(scope.externalKey))
-    .map((scope) => {
-      const scopeIcon = scope.externalKey?.startsWith('lib') ? RESOURCE_ICONS.LIBRARY : RESOURCE_ICONS.COURSE;
-      let groupName = formatMessage(messages['authz.team.members.table.group.courses']);
-      if (scope.externalKey?.startsWith('lib')) {
-        groupName = formatMessage(messages['authz.team.members.table.group.libraries']);
-      }
-      return {
-        displayName: scope.displayName,
-        value: scope.externalKey,
-        description: scope.org?.shortName,
-        groupName,
-        groupIcon: scopeIcon,
-      };
-    }), [scopesData?.pages, formatMessage, isCourseEnabled]);
+  // Offer only the scopes present in the table rows (react-table's preFilteredRows),
+  // so the choices always match the data being filtered. Global (Django-managed)
+  // scopes are not offered, mirroring the scope list API this filter used to query.
+  const filterChoices = useMemo(() => {
+    const search = searchValue?.toLowerCase();
+    return [...new Set((preFilteredRows ?? []).map((row) => row.values[id ?? 'scope']))]
+      .filter((scope) => scope?.startsWith('lib') || scope?.startsWith('course'))
+      .filter((scope) => !search || scope.toLowerCase().includes(search))
+      .sort()
+      .map((scope) => {
+        const isLibrary = scope.startsWith('lib');
+        return {
+          displayName: scope,
+          value: scope,
+          groupName: formatMessage(isLibrary
+            ? messages['authz.team.members.table.group.libraries']
+            : messages['authz.team.members.table.group.courses']),
+          groupIcon: isLibrary ? RESOURCE_ICONS.LIBRARY : RESOURCE_ICONS.COURSE,
+        };
+      });
+  }, [preFilteredRows, id, searchValue, formatMessage]);
 
   const handleSearchChange = (value: string) => {
     setSearchValue(value);

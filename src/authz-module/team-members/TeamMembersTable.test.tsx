@@ -4,6 +4,7 @@ import { renderWithAllProviders } from '@src/setupTest';
 import { useAllRoleAssignments, useOrgs, useScopes } from '@src/authz-module/data/hooks';
 import type { GetAllRoleAssignmentsResponse } from '@src/authz-module/data/api';
 import { useViewTeamPermissions } from '@src/authz-module/hooks/useViewTeamPermissions';
+import { useCourseAuthoringFlag } from '@src/authz-module/hooks/useCourseAuthoringFlag';
 import { LIBRARY_ROLE_KEYS } from '@src/authz-module/roles-permissions';
 import { ToastManagerProvider } from '@src/components/ToastManager/ToastManagerContext';
 import TeamMembersTable from './TeamMembersTable';
@@ -13,6 +14,7 @@ jest.mock('@src/authz-module/hooks/useViewTeamPermissions', () => ({
 }));
 
 const mockUseViewTeamPermissions = useViewTeamPermissions as jest.Mock;
+const mockUseCourseAuthoringFlag = useCourseAuthoringFlag as jest.Mock;
 
 const mockedAllRoleAssignments: {
   data: GetAllRoleAssignmentsResponse | undefined;
@@ -44,8 +46,6 @@ const mockedAllRoleAssignments: {
       },
     ],
     count: 2,
-    next: null,
-    previous: null,
   },
   error: null,
   isLoading: false,
@@ -123,11 +123,7 @@ jest.mock('@edx/frontend-platform/logging', () => ({
 }));
 
 jest.mock('@src/authz-module/hooks/useCourseAuthoringFlag', () => ({
-  useCourseAuthoringFlag: () => ({
-    isCourseAuthoringEnabled: true,
-    isCourseEnabled: () => true,
-    isLoading: false,
-  }),
+  useCourseAuthoringFlag: jest.fn(),
 }));
 
 jest.mock('@src/authz-module/data/hooks', () => ({
@@ -154,18 +150,32 @@ describe('TeamMembersTable', () => {
       isLibraryViewAllowed: true,
       isLoading: false,
     });
+    mockUseCourseAuthoringFlag.mockReturnValue({
+      isCourseAuthoringEnabled: true,
+      isCourseEnabled: () => true,
+      isLoading: false,
+    });
   });
 
   it('renders table with role assignments data', async () => {
-    const presetScope = 'course-v1:OpenedX+DemoX+DemoCourse';
     mockApiResponses();
-    renderWithAllProviders(<ToastManagerProvider><TeamMembersTable presetScope={presetScope} /></ToastManagerProvider>);
+    renderWithAllProviders(<ToastManagerProvider><TeamMembersTable /></ToastManagerProvider>);
     await waitFor(() => {
       expect(screen.getByText('John Doe')).toBeInTheDocument();
       expect(screen.getByText('Jane Admin')).toBeInTheDocument();
       expect(screen.getByText('johndoe@example.com')).toBeInTheDocument();
       expect(screen.getByText('jane@example.com')).toBeInTheDocument();
     });
+  });
+
+  it('applies the preset scope as an active filter on the rows', async () => {
+    const presetScope = 'course-v1:OpenedX+DemoX+DemoCourse';
+    mockApiResponses();
+    renderWithAllProviders(<ToastManagerProvider><TeamMembersTable presetScope={presetScope} /></ToastManagerProvider>);
+    await waitFor(() => {
+      expect(screen.getByText('John Doe')).toBeInTheDocument();
+    });
+    expect(screen.queryByText('Jane Admin')).not.toBeInTheDocument();
   });
 
   it('shows loading state initially', () => {
@@ -236,10 +246,42 @@ describe('TeamMembersTable', () => {
     mockApiResponses();
     renderWithAllProviders(<ToastManagerProvider><TeamMembersTable /></ToastManagerProvider>);
     await waitFor(() => {
-      expect(useAllRoleAssignments).toHaveBeenCalledWith(
-        expect.objectContaining({ roles: LIBRARY_ROLE_KEYS }),
-      );
+      expect(useAllRoleAssignments).toHaveBeenCalledWith(LIBRARY_ROLE_KEYS, true);
     });
+  });
+
+  it('hides course assignment rows when authoring is disabled for the course', async () => {
+    mockUseCourseAuthoringFlag.mockReturnValue({
+      isCourseAuthoringEnabled: true,
+      isCourseEnabled: (scope: string) => scope !== 'course-v1:OpenedX+DemoX+DemoCourse',
+      isLoading: false,
+    });
+    mockApiResponses();
+    renderWithAllProviders(<ToastManagerProvider><TeamMembersTable /></ToastManagerProvider>);
+    await waitFor(() => {
+      expect(screen.getByText('Jane Admin')).toBeInTheDocument();
+    });
+    expect(screen.queryByText('John Doe')).not.toBeInTheDocument();
+  });
+
+  it('shows a warning when the total records exceed the client-side maximum', async () => {
+    mockApiResponses({
+      ...mockedAllRoleAssignments,
+      data: { ...mockedAllRoleAssignments.data!, count: 10001 },
+    });
+    renderWithAllProviders(<ToastManagerProvider><TeamMembersTable /></ToastManagerProvider>);
+    await waitFor(() => {
+      expect(screen.getByText(/only the first 10,000 of 10,001 records are shown/i)).toBeInTheDocument();
+    });
+  });
+
+  it('does not show the max-records warning when the total fits the client-side maximum', async () => {
+    mockApiResponses();
+    renderWithAllProviders(<ToastManagerProvider><TeamMembersTable /></ToastManagerProvider>);
+    await waitFor(() => {
+      expect(screen.getByText('John Doe')).toBeInTheDocument();
+    });
+    expect(screen.queryByText(/records are shown/i)).not.toBeInTheDocument();
   });
 
   it('handles empty data gracefully', async () => {
@@ -247,8 +289,6 @@ describe('TeamMembersTable', () => {
       data: {
         results: [],
         count: 0,
-        next: null,
-        previous: null,
       },
       error: null,
       isLoading: false,

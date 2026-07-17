@@ -20,10 +20,10 @@ const authzQueryKeys = {
     ...authzQueryKeys.teamMembersAll(scope), querySettings] as const,
   permissionsByRole: (scope: string) => [...authzQueryKeys.all, 'permissionsByRole', scope] as const,
   library: (libraryId: string) => [...authzQueryKeys.all, 'library', libraryId] as const,
-  allRoleAssignments: (querySettings?: QuerySettings) => [...authzQueryKeys.all, 'allRoleAssignments', querySettings] as const,
+  allRoleAssignments: (roles?: string) => [...authzQueryKeys.all, 'allRoleAssignments', roles] as const,
   orgs: (search?: string, page?: number, pageSize?: number) => [...authzQueryKeys.all, 'organizations', search, page, pageSize] as const,
   scopes: (search?: string, page?: number, pageSize?: number) => [...authzQueryKeys.all, 'scopes', search, page, pageSize] as const,
-  userRoles: (username?: string, querySettings?: QuerySettings) => [...authzQueryKeys.all, 'userRoles', username, querySettings] as const,
+  userRoles: (username?: string, roles?: string) => [...authzQueryKeys.all, 'userRoles', username, roles] as const,
   courseAuthoringFlagStates: () => [...authzQueryKeys.all, 'courseAuthoringFlagStates'] as const,
 };
 
@@ -149,23 +149,20 @@ export const useRevokeUserRoles = () => {
 
 /**
  * React Query hook to fetch all role assignments across scopes and roles,
- * with support for filtering, sorting, and pagination.
- * It retrieves a comprehensive list of user-role assignments based
- * on the provided query settings.
+ * drained into a single list (capped at TABLE_MAX_SUPPORTED_RECORDS) for
+ * client-side filtering, sorting, and pagination.
  *
- * @param querySettings - Optional parameters for filtering by roles, scopes,
- * organizations, search term, sorting, and pagination.
+ * @param roles - Optional comma-separated role keys to restrict the results server-side
  *
  * @example
- * const { data: roleAssignments } = useAllRoleAssignments({ roles: 'editor', pageSize: 20 });
+ * const { data: roleAssignments } = useAllRoleAssignments();
  */
-export const useAllRoleAssignments = (querySettings: QuerySettings) => {
+export const useAllRoleAssignments = (roles?: string, enabled?: boolean) => {
   const result = useQuery<GetAllRoleAssignmentsResponse, Error>({
-    queryKey: authzQueryKeys.allRoleAssignments(querySettings),
-    queryFn: () => getAllRoleAssignments(querySettings),
+    queryKey: authzQueryKeys.allRoleAssignments(roles),
+    queryFn: () => getAllRoleAssignments(roles),
     staleTime: 1000 * 60 * 30, // refetch after 30 minutes
-    retry: false,
-    refetchOnWindowFocus: false,
+    enabled,
   });
   return result;
 };
@@ -229,22 +226,23 @@ export const useScopes = (params: Omit<GetScopesParams, 'page'> = {}) => useInfi
 });
 
 /*
-  * React Query hook to fetch all the roles assigned to a specific user.
-  * It retrieves the full list of roles with the corresponding permissions.
+  * React Query hook to fetch all the roles assigned to a specific user,
+  * drained into a single list (capped at TABLE_MAX_SUPPORTED_RECORDS) for
+  * client-side filtering, sorting, and pagination.
   * @param username - The username of the user
-  * @param querySettings - Optional query parameters for filtering, sorting, and pagination
+  * @param roles - Optional comma-separated role keys to restrict the results server-side
   *
   * @example
   * ```tsx
-  * const { data: userRoles } = useUserAssignedRoles('jdoe', querySettings);
+  * const { data: userRoles } = useUserAssignedRoles('jdoe');
   * ```
 */
 export const useUserAssignedRoles = (
   username?: string,
-  querySettings?: QuerySettings,
+  roles?: string,
 ) => useQuery<GetUserAssignmentsResponse, Error>({
-  queryKey: authzQueryKeys.userRoles(username, querySettings),
-  queryFn: () => getUserAssignedRoles(username, querySettings),
+  queryKey: authzQueryKeys.userRoles(username, roles),
+  queryFn: () => getUserAssignedRoles(username, roles),
   staleTime: 1000 * 60 * 30, // refetch after 30 minutes
   enabled: !!username,
   refetchOnWindowFocus: false,

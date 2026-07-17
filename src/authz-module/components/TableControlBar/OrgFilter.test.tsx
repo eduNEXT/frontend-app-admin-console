@@ -140,4 +140,45 @@ describe('OrgFilter', () => {
     expect(await screen.findByText('Organization 1')).toBeInTheDocument();
     expect(screen.getByText('Organization 2')).toBeInTheDocument();
   });
+
+  describe('as a table column filter', () => {
+    const rowsWithOrgs = (orgs: string[]) => orgs.map((org) => ({ values: { org } }));
+    const tableProps = {
+      ...defaultProps,
+      id: 'org',
+      preFilteredRows: rowsWithOrgs(['OpenedX', 'WGU', 'OpenedX']),
+    };
+
+    it('derives deduplicated choices from the table rows instead of the org API', async () => {
+      const user = userEvent.setup();
+      renderWrapper(<OrgFilter {...tableProps} />);
+      await openDropdown(user);
+      expect(await screen.findByText('OpenedX')).toBeInTheDocument();
+      expect(screen.getAllByLabelText('OpenedX')).toHaveLength(1);
+      expect(screen.getByText('WGU')).toBeInTheDocument();
+      expect(screen.queryByText('Organization 1')).not.toBeInTheDocument();
+    });
+
+    it('filters the row-derived choices with the search input', async () => {
+      const user = userEvent.setup();
+      renderWrapper(<OrgFilter {...tableProps} />);
+      await openDropdown(user);
+      const searchInput = screen.getAllByRole('textbox')[0];
+      await user.type(searchInput, 'wgu');
+      expect(await screen.findByText('WGU')).toBeInTheDocument();
+      expect(screen.queryByText('OpenedX')).not.toBeInTheDocument();
+    });
+
+    it('calls setFilter with the selected org', async () => {
+      const user = userEvent.setup();
+      const setFilter = jest.fn();
+      renderWrapper(<OrgFilter {...tableProps} setFilter={setFilter} />);
+      await openDropdown(user);
+      await user.click(await screen.findByLabelText('WGU'));
+      expect(setFilter).toHaveBeenCalledWith(
+        ['WGU'],
+        expect.objectContaining({ value: 'WGU' }),
+      );
+    });
+  });
 });
