@@ -1,14 +1,18 @@
+import { useCallback, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { appId } from '@src/constants';
 import { useValidateUserPermissionsNonSuspense } from '@src/data/hooks';
 import { getAuthzCatalog } from './api';
 import { SCOPE_TYPES, VIEW_TEAM_ACTIONS } from '../constants';
-import type { AuthzCatalog } from '../types';
+import type { AuthzCatalog, ScopeCatalog } from '../types';
+import { getScopeCatalog } from '../utils';
 
 const catalogQueryKeys = {
   all: [appId, 'authz', 'catalog'] as const,
   byScopeTypes: (scopeTypes: string[]) => [...catalogQueryKeys.all, scopeTypes] as const,
 };
+
+const NO_SCOPE_TYPES: string[] = [];
 
 // Requested in the same order as useViewTeamPermissions (libraries first), so both share one
 // validate/me query.
@@ -25,9 +29,16 @@ const VIEW_TEAM_PERMISSIONS = [SCOPE_TYPES.LIBRARY, SCOPE_TYPES.COURSE].map((sco
  * The catalog comes from the authz schema and doesn't change while the app runs, so it never
  * goes stale.
  *
+ * Besides the query result, it returns:
+ * - `scopeTypes`: the scope types of the loaded catalog, courses first; empty until it loads.
+ * - `getScopeCatalog(scopeType)`: the catalog of one scope type (see `getScopeCatalog` in utils),
+ *   or `undefined` if it isn't loaded. Each scope type's catalog keeps its identity between
+ *   renders, so tables built from it don't reset.
+ *
  * @example
  * ```tsx
- * const { data: catalog, isLoading } = useAuthzCatalog();
+ * const { scopeTypes, getScopeCatalog, isLoading } = useAuthzCatalog();
+ * const libraryCatalog = getScopeCatalog(SCOPE_TYPES.LIBRARY);
  * ```
  */
 export const useAuthzCatalog = () => {
@@ -35,16 +46,32 @@ export const useAuthzCatalog = () => {
     data: permissions, isLoading: isLoadingPermissions,
   } = useValidateUserPermissionsNonSuspense(VIEW_TEAM_PERMISSIONS);
 
-  const scopeTypes: string[] = [SCOPE_TYPES.COURSE, SCOPE_TYPES.LIBRARY].filter((scopeType) => (
+  const viewableScopeTypes: string[] = [SCOPE_TYPES.COURSE, SCOPE_TYPES.LIBRARY].filter((scopeType) => (
     permissions?.some(({ action, allowed }) => allowed && action === VIEW_TEAM_ACTIONS[scopeType])
   ));
 
   const query = useQuery<AuthzCatalog, Error>({
-    queryKey: catalogQueryKeys.byScopeTypes(scopeTypes),
-    queryFn: () => getAuthzCatalog(scopeTypes),
-    enabled: scopeTypes.length > 0,
+    queryKey: catalogQueryKeys.byScopeTypes(viewableScopeTypes),
+    queryFn: () => getAuthzCatalog(viewableScopeTypes),
+    enabled: viewableScopeTypes.length > 0,
     staleTime: Infinity,
   });
 
-  return { ...query, isLoading: isLoadingPermissions || query.isLoading };
+  const { data: catalog } = query;
+
+  const scopeCatalogs = useMemo(() => new Map<string, ScopeCatalog>(
+    (catalog?.scopeTypes ?? []).map((scopeType) => [scopeType, getScopeCatalog(catalog!, scopeType)]),
+  ), [catalog]);
+
+  const getLoadedScopeCatalog = useCallback(
+    (scopeType: string) => scopeCatalogs.get(scopeType),
+    [scopeCatalogs],
+  );
+
+  return {
+    ...query,
+    isLoading: isLoadingPermissions || query.isLoading,
+    scopeTypes: catalog?.scopeTypes ?? NO_SCOPE_TYPES,
+    getScopeCatalog: getLoadedScopeCatalog,
+  };
 };

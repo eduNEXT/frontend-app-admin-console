@@ -14,8 +14,16 @@ interface MockApiOptions {
   isPermissionsPending?: boolean;
 }
 
-// Answers validate/me with the given view-team permissions, and the catalog endpoint with an
-// empty catalog of the scope types that were requested.
+const buildPermission = (id: string, scopeType: string) => ({
+  id, display_name: id, description: '', icon: null, category_id: null, scope_types: [scopeType],
+});
+
+const buildRole = (role: string, permissions: string[]) => ({
+  role, display_name: role, description: '', icon: null, definition_kind: 'static', permissions,
+});
+
+// Answers validate/me with the given view-team permissions, and the catalog endpoint with a
+// course role and a library role, for the scope types that were requested.
 const mockApi = ({ course = false, library = false, isPermissionsPending = false }: MockApiOptions) => {
   const post = jest.fn(() => (isPermissionsPending ? new Promise(() => {}) : Promise.resolve({
     data: [
@@ -30,8 +38,14 @@ const mockApi = ({ course = false, library = false, isPermissionsPending = false
       previous: null,
       scope_types: url.searchParams.get('scope_types')?.split(','),
       categories: [],
-      permissions: [],
-      results: [],
+      permissions: [
+        buildPermission('courses.view_course', SCOPE_TYPES.COURSE),
+        buildPermission('content_libraries.view_library', SCOPE_TYPES.LIBRARY),
+      ],
+      results: [
+        buildRole('course_admin', ['courses.view_course']),
+        buildRole('library_admin', ['content_libraries.view_library']),
+      ],
     },
   }));
   mockHttpClient().mockReturnValue({ get, post });
@@ -50,7 +64,7 @@ describe('useAuthzCatalog', () => {
 
     const { result } = renderUseAuthzCatalog();
 
-    await waitFor(() => expect(result.current.data?.scopeTypes).toEqual(['course-v1', 'lib']));
+    await waitFor(() => expect(result.current.scopeTypes).toEqual([SCOPE_TYPES.COURSE, SCOPE_TYPES.LIBRARY]));
   });
 
   it('fetches only the library catalog when the user can only view library teams', async () => {
@@ -58,7 +72,30 @@ describe('useAuthzCatalog', () => {
 
     const { result } = renderUseAuthzCatalog();
 
-    await waitFor(() => expect(result.current.data?.scopeTypes).toEqual(['lib']));
+    await waitFor(() => expect(result.current.scopeTypes).toEqual([SCOPE_TYPES.LIBRARY]));
+  });
+
+  it('gives the catalog of each scope type the user can view', async () => {
+    mockApi({ course: true, library: true });
+
+    const { result } = renderUseAuthzCatalog();
+
+    await waitFor(() => expect(
+      result.current.getScopeCatalog(SCOPE_TYPES.LIBRARY)?.roles.map(({ role }) => role),
+    ).toEqual(['library_admin']));
+    expect(result.current.getScopeCatalog(SCOPE_TYPES.COURSE)?.roles.map(({ role }) => role)).toEqual(['course_admin']);
+  });
+
+  it('keeps the same scope type catalog between renders', async () => {
+    mockApi({ library: true });
+
+    const { result, rerender } = renderUseAuthzCatalog();
+    await waitFor(() => expect(result.current.getScopeCatalog(SCOPE_TYPES.LIBRARY)).toBeDefined());
+    const libraryCatalog = result.current.getScopeCatalog(SCOPE_TYPES.LIBRARY);
+
+    rerender();
+
+    expect(result.current.getScopeCatalog(SCOPE_TYPES.LIBRARY)).toBe(libraryCatalog);
   });
 
   it('is loading while the view permissions are being resolved', () => {
@@ -76,7 +113,8 @@ describe('useAuthzCatalog', () => {
     const { result } = renderUseAuthzCatalog();
 
     await waitFor(() => expect(result.current.isLoading).toBe(false));
-    expect(result.current.data).toBeUndefined();
+    expect(result.current.scopeTypes).toEqual([]);
+    expect(result.current.getScopeCatalog(SCOPE_TYPES.LIBRARY)).toBeUndefined();
     expect(get).not.toHaveBeenCalled();
   });
 
@@ -90,7 +128,7 @@ describe('useAuthzCatalog', () => {
           count: CATALOG_PAGE_SIZE * 2 + 1,
           next: page < 3 ? 'next-page' : null,
           previous: null,
-          scope_types: ['lib'],
+          scope_types: [SCOPE_TYPES.LIBRARY],
           categories: [],
           permissions: [],
           results: [{
