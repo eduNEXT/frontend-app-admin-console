@@ -7,10 +7,18 @@ import {
   useValidateUsers, useAssignTeamMembersRole, useScopes, useOrgs,
 } from '@src/authz-module/data/hooks';
 import useScopePermissions from './hooks/useScopePermissions';
-import { courseRolesMetadata, libraryRolesMetadata } from '@src/authz-module/roles-permissions';
+import { SCOPE_TYPES } from '@src/authz-module/catalog';
+import type { Role } from '@src/authz-module/catalog';
 import AssignRoleWizard from './AssignRoleWizard';
 
-const allRolesMetadata = [...courseRolesMetadata, ...libraryRolesMetadata];
+const buildRole = (role: string, displayName: string): Role => ({
+  role, displayName, description: '', icon: null, definitionKind: 'static', permissions: [],
+});
+
+const roleGroups = [
+  { scopeType: SCOPE_TYPES.COURSE, roles: [buildRole('course_admin', 'Course Admin')] },
+  { scopeType: SCOPE_TYPES.LIBRARY, roles: [buildRole('library_admin', 'Library Admin')] },
+];
 
 jest.mock('@openedx/frontend-base', () => ({
   ...jest.requireActual('@openedx/frontend-base'),
@@ -93,7 +101,7 @@ const oneOrg = [
 
 const renderWizard = (props = {}) => renderWrapper(
   <ToastManagerProvider>
-    <AssignRoleWizard onClose={jest.fn()} roles={allRolesMetadata} {...props} />
+    <AssignRoleWizard onClose={jest.fn()} roleGroups={roleGroups} {...props} />
   </ToastManagerProvider>,
 );
 
@@ -135,7 +143,7 @@ describe('AssignRoleWizard — Step 1', () => {
   });
 
   it('renders no role options and keeps Next disabled when roles is empty', () => {
-    renderWizard({ roles: [] });
+    renderWizard({ roleGroups: [] });
     expect(screen.queryByRole('radio')).not.toBeInTheDocument();
     expect(getNextButton()).toBeDisabled();
   });
