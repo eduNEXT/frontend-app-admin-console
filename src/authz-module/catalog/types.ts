@@ -30,6 +30,12 @@ export interface AuthzCatalog {
   roles: Role[];
 }
 
+// A category with some of its permissions.
+export interface CategoryPermissions {
+  category: Category;
+  permissions: Permission[];
+}
+
 // The part of the catalog that applies to one scope type.
 export interface ScopeCatalog {
   scopeType: string;

@@ -5,6 +5,27 @@ import { mockHttpClient } from '@src/testUtils';
 import type { PermissionValidationRequest } from '@src/types';
 import { VIEW_TEAM_ACTIONS } from './constants';
 
+/** The catalog API response, as the backend sends it, without the pagination fields. */
+interface AuthzCatalogResponse {
+  categories: { id: string; display_name: string; description: string; icon: string | null }[];
+  permissions: {
+    id: string;
+    display_name: string;
+    description: string;
+    icon: string | null;
+    category_id: string | null;
+    scope_types: string[];
+  }[];
+  results: {
+    role: string;
+    display_name: string;
+    description: string;
+    icon: string | null;
+    definition_kind: string;
+    permissions: string[];
+  }[];
+}
+
 const buildCatalogPermission = (id: string, categoryId: string, scopeType: string) => ({
   id, display_name: id, description: '', icon: null, category_id: categoryId, scope_types: [scopeType],
 });
@@ -14,7 +35,7 @@ const buildCatalogRole = (role: string, displayName: string, permissions: string
 });
 
 /** A catalog API response with the course and library roles, as the backend sends it. */
-export const authzCatalogResponse = {
+export const authzCatalogResponse: AuthzCatalogResponse = {
   categories: [
     { id: 'course', display_name: 'Course', description: '', icon: 'BookOpen' },
     { id: 'library', display_name: 'Library', description: '', icon: 'CollectionsBookmark' },
@@ -50,7 +71,7 @@ export const authzCatalogResponse = {
  * requested scope types, as the backend does, and lets the user view the teams of every scope type.
  * Only meaningful in suites that `jest.mock('@openedx/frontend-base', ...)`. Returns the mocked `get`.
  */
-export const mockAuthzCatalog = (catalog = authzCatalogResponse) => {
+export const mockAuthzCatalog = (catalog: AuthzCatalogResponse = authzCatalogResponse) => {
   const get = jest.fn((url: URL) => {
     const scopeTypes = url.searchParams.get('scope_types')?.split(',') ?? [];
     const permissions = catalog.permissions.filter(
