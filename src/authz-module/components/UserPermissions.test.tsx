@@ -117,7 +117,10 @@ describe('UserPermissions', () => {
     const { container } = renderUserPermissions({ role: 'unknown_role', scope: 'lib:OpenedX:CSPROB' });
 
     await waitFor(() => expect(get).toHaveBeenCalled());
-    await act(() => get.mock.results[0].value);
+    // React Query hands the response to the component on a later tick.
+    await act(() => new Promise((resolve) => {
+      setTimeout(resolve, 0);
+    }));
     expect(container).toBeEmptyDOMElement();
   });
 
