@@ -1,5 +1,6 @@
 import { screen } from '@testing-library/react';
-import { renderWrapper } from '@src/testUtils';
+import { renderWithAllProviders } from '@src/testUtils';
+import { mockAuthzCatalog } from '@src/authz-module/catalog/testUtils';
 import { DataTableContext, TextFilter } from '@openedx/paragon';
 import userEvent from '@testing-library/user-event';
 import TableControlBar from './TableControlBar';
@@ -33,6 +34,11 @@ const mockState = {
     { id: 'org', value: ['org1'] },
   ],
 };
+
+jest.mock('@openedx/frontend-base', () => ({
+  ...jest.requireActual('@openedx/frontend-base'),
+  getAuthenticatedHttpClient: jest.fn(),
+}));
 
 jest.mock('@src/authz-module/hooks/useCourseAuthoringFlag', () => ({
   useCourseAuthoringFlag: () => ({
@@ -74,7 +80,7 @@ describe('TableControlBar', () => {
 
   const renderWithContext = (component, contextOverride = {}) => {
     const context = { ...mockDataTableContext, ...contextOverride };
-    return renderWrapper(
+    return renderWithAllProviders(
       <DataTableContext.Provider value={context}>
         {component}
       </DataTableContext.Provider>,
@@ -83,6 +89,7 @@ describe('TableControlBar', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    mockAuthzCatalog();
     mockSetAllFilters.mockClear();
     mockOnFilterChange.mockClear();
   });
