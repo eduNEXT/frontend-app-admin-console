@@ -1,0 +1,31 @@
+export interface Category {
+  id: string;
+  displayName: string;
+  description: string;
+  icon: string | null;
+}
+
+export interface Permission {
+  id: string;
+  displayName: string;
+  description: string;
+  icon: string | null;
+  categoryId: string | null;
+  scopeTypes: string[];
+}
+
+export interface Role {
+  role: string;
+  displayName: string;
+  description: string;
+  icon: string | null;
+  definitionKind: 'static' | 'user_defined';
+  permissions: string[];
+}
+
+export interface AuthzCatalog {
+  scopeTypes: string[];
+  categories: Category[];
+  permissions: Permission[];
+  roles: Role[];
+}
