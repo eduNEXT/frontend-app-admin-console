@@ -21,7 +21,9 @@ const getLazyIcon = (name: string) => {
   if (!lazyIcons.has(name)) {
     lazyIcons.set(name, lazy(() => (
       ICON_NAME_PATTERN.test(name)
-        ? import(`@openedx/paragon/icons/es5/${name}.js`).catch(() => ({ default: NoIcon }))
+        // `index.js` re-exports every icon, so it stays out of the lazy chunks.
+        ? import(/* webpackExclude: /index\.js$/ */ `@openedx/paragon/icons/es5/${name}.js`)
+            .catch(() => ({ default: NoIcon }))
         : Promise.resolve({ default: NoIcon })
     )));
   }
