@@ -29,3 +29,11 @@ export interface AuthzCatalog {
   permissions: Permission[];
   roles: Role[];
 }
+
+// The part of the catalog that applies to one scope type.
+export interface ScopeCatalog {
+  scopeType: string;
+  categories: Category[];
+  permissions: Permission[];
+  roles: Role[];
+}
