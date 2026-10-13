@@ -1,26 +1,14 @@
-import { act, screen, waitFor } from '@testing-library/react';
-import { useValidateUserPermissionsNonSuspense } from '@src/data/hooks';
-import { CONTENT_COURSE_PERMISSIONS, CONTENT_LIBRARY_PERMISSIONS } from '@src/authz-module/roles-permissions';
+import { screen } from '@testing-library/react';
 import { renderWithAllProviders } from '@src/testUtils';
-import { authzCatalogResponse, mockAuthzCatalog } from '@src/authz-module/catalog/testUtils';
+import { SCOPE_TYPES } from '@src/authz-module/catalog';
+import {
+  authzCatalog, buildCatalogCategory, buildCatalogPermission, buildCatalogRole, mockAuthzCatalog,
+} from '@src/authz-module/catalog/testUtils';
 import UserPermissions from './UserPermissions';
 
-jest.mock('@openedx/frontend-base', () => ({
-  ...jest.requireActual('@openedx/frontend-base'),
-  getAuthenticatedHttpClient: jest.fn(),
+jest.mock('@src/authz-module/catalog/data/hooks', () => ({
+  useAuthzCatalog: jest.fn(),
 }));
-
-jest.mock('@src/data/hooks', () => ({
-  useValidateUserPermissionsNonSuspense: jest.fn(),
-}));
-
-const buildPermission = (id: string, categoryId: string | null, scopeType: string) => ({
-  id, display_name: id, description: '', icon: null, category_id: categoryId, scope_types: [scopeType],
-});
-
-const buildCategory = (id: string) => ({
-  id, display_name: id, description: '', icon: null,
-});
 
 const renderUserPermissions = (original: { role: string; scope?: string }) => renderWithAllProviders(
   <UserPermissions row={{ original }} />,
@@ -30,13 +18,6 @@ describe('UserPermissions', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     mockAuthzCatalog();
-    (useValidateUserPermissionsNonSuspense as jest.Mock).mockReturnValue({
-      data: [
-        { action: CONTENT_COURSE_PERMISSIONS.VIEW_COURSE_TEAM, allowed: true },
-        { action: CONTENT_LIBRARY_PERMISSIONS.VIEW_LIBRARY_TEAM, allowed: true },
-      ],
-      isLoading: false,
-    });
   });
 
   it('describes the Django managed roles', () => {
@@ -55,19 +36,17 @@ describe('UserPermissions', () => {
 
   it('shows the permissions of the assignment scope type for a role in several scope types', async () => {
     mockAuthzCatalog({
-      categories: [buildCategory('course'), buildCategory('library')],
-      permissions: [
-        buildPermission('courses.view_course_team', 'course', 'course-v1'),
-        buildPermission('content_libraries.view_library_team', 'library', 'lib'),
-      ],
-      results: [{
-        role: 'team_viewer',
-        display_name: 'Team Viewer',
-        description: '',
-        icon: null,
-        definition_kind: 'static',
-        permissions: ['courses.view_course_team', 'content_libraries.view_library_team'],
-      }],
+      catalog: {
+        scopeTypes: [SCOPE_TYPES.COURSE, SCOPE_TYPES.LIBRARY],
+        categories: [buildCatalogCategory('course'), buildCatalogCategory('library')],
+        permissions: [
+          buildCatalogPermission('courses.view_course_team', 'course', SCOPE_TYPES.COURSE),
+          buildCatalogPermission('content_libraries.view_library_team', 'library', SCOPE_TYPES.LIBRARY),
+        ],
+        roles: [buildCatalogRole('team_viewer', 'Team Viewer', [
+          'courses.view_course_team', 'content_libraries.view_library_team',
+        ])],
+      },
     });
 
     renderUserPermissions({ role: 'team_viewer', scope: 'lib:OpenedX:CSPROB' });
@@ -78,11 +57,16 @@ describe('UserPermissions', () => {
 
   it('groups the permissions without a category under "Other"', async () => {
     mockAuthzCatalog({
-      ...authzCatalogResponse,
-      permissions: [...authzCatalogResponse.permissions, buildPermission('content_libraries.export_library', null, 'lib')],
-      results: authzCatalogResponse.results.map((role) => (role.role === 'library_user'
-        ? { ...role, permissions: [...role.permissions, 'content_libraries.export_library'] }
-        : role)),
+      catalog: {
+        ...authzCatalog,
+        permissions: [
+          ...authzCatalog.permissions,
+          buildCatalogPermission('content_libraries.export_library', null, SCOPE_TYPES.LIBRARY),
+        ],
+        roles: authzCatalog.roles.map((role) => (role.role === 'library_user'
+          ? { ...role, permissions: [...role.permissions, 'content_libraries.export_library'] }
+          : role)),
+      },
     });
 
     renderUserPermissions({ role: 'library_user', scope: 'lib:OpenedX:CSPROB' });
@@ -94,16 +78,12 @@ describe('UserPermissions', () => {
   it('splits the categories in two columns when there are more than three', async () => {
     const categoryIds = ['one', 'two', 'three', 'four'];
     mockAuthzCatalog({
-      categories: categoryIds.map(buildCategory),
-      permissions: categoryIds.map((id) => buildPermission(`courses.${id}`, id, 'course-v1')),
-      results: [{
-        role: 'course_admin',
-        display_name: 'Course Admin',
-        description: '',
-        icon: null,
-        definition_kind: 'static',
-        permissions: categoryIds.map((id) => `courses.${id}`),
-      }],
+      catalog: {
+        scopeTypes: [SCOPE_TYPES.COURSE],
+        categories: categoryIds.map((id) => buildCatalogCategory(id)),
+        permissions: categoryIds.map((id) => buildCatalogPermission(`courses.${id}`, id, SCOPE_TYPES.COURSE)),
+        roles: [buildCatalogRole('course_admin', 'Course Admin', categoryIds.map((id) => `courses.${id}`))],
+      },
     });
 
     renderUserPermissions({ role: 'course_admin', scope: 'course-v1:OpenedX+DemoX+Demo' });
@@ -112,15 +92,9 @@ describe('UserPermissions', () => {
     expect(screen.getAllByRole('list')).toHaveLength(4);
   });
 
-  it('shows nothing for a role the catalog does not have', async () => {
-    const get = mockAuthzCatalog();
+  it('shows nothing for a role the catalog does not have', () => {
     const { container } = renderUserPermissions({ role: 'unknown_role', scope: 'lib:OpenedX:CSPROB' });
 
-    await waitFor(() => expect(get).toHaveBeenCalled());
-    // React Query hands the response to the component on a later tick.
-    await act(() => new Promise((resolve) => {
-      setTimeout(resolve, 0);
-    }));
     expect(container).toBeEmptyDOMElement();
   });
 

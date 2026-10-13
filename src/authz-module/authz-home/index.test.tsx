@@ -9,9 +9,8 @@ import { CustomErrors } from '@src/constants';
 import AuthzHome from './index';
 import messages from './messages';
 
-jest.mock('@openedx/frontend-base', () => ({
-  ...jest.requireActual('@openedx/frontend-base'),
-  getAuthenticatedHttpClient: jest.fn(),
+jest.mock('@src/authz-module/catalog/data/hooks', () => ({
+  useAuthzCatalog: jest.fn(),
 }));
 
 jest.mock('@src/authz-module/hooks/useCourseAuthoringFlag', () => ({

@@ -1,4 +1,4 @@
-import { act, screen, waitFor } from '@testing-library/react';
+import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { renderWithAllProviders } from '@src/testUtils';
 import { mockAuthzCatalog } from '@src/authz-module/catalog/testUtils';
@@ -12,9 +12,8 @@ import {
 } from '@src/authz-module/roles-permissions';
 import AssignRoleWizardPage from './AssignRoleWizardPage';
 
-jest.mock('@openedx/frontend-base', () => ({
-  ...jest.requireActual('@openedx/frontend-base'),
-  getAuthenticatedHttpClient: jest.fn(),
+jest.mock('@src/authz-module/catalog/data/hooks', () => ({
+  useAuthzCatalog: jest.fn(),
 }));
 
 jest.mock('react-router-dom', () => ({
@@ -54,27 +53,6 @@ const allowAllPermissions = {
   isLoading: false,
 };
 
-// The catalog only holds the scope types the user can view, so both are viewable.
-const viewTeamPermissions = [
-  { action: CONTENT_LIBRARY_PERMISSIONS.VIEW_LIBRARY_TEAM, allowed: true },
-  { action: CONTENT_COURSE_PERMISSIONS.VIEW_COURSE_TEAM, allowed: true },
-];
-
-const mockPermissions = (
-  manageData: typeof allowAllPermissions,
-) => () => ({ ...manageData, data: [...manageData.data, ...viewTeamPermissions] });
-
-let catalogGet: jest.Mock;
-
-// Waits until the page has the catalog, so that a role missing from the wizard is really left out.
-const waitForCatalog = async () => {
-  await waitFor(() => expect(catalogGet).toHaveBeenCalled());
-  // React Query hands the response to the page on a later tick.
-  await act(() => new Promise((resolve) => {
-    setTimeout(resolve, 0);
-  }));
-};
-
 const setupMocks = ({ users = '', from = '' } = {}) => {
   const { useSearchParams, useNavigate } = jest.requireMock('react-router-dom');
   const params = new URLSearchParams();
@@ -95,12 +73,12 @@ const renderPage = () => renderWithAllProviders(
 describe('AssignRoleWizardPage', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    catalogGet = mockAuthzCatalog();
+    mockAuthzCatalog();
     mockUseValidateUsers.mockReturnValue({
       mutateAsync: jest.fn(),
       isPending: false,
     });
-    mockUseValidatePermissions.mockImplementation(mockPermissions(allowAllPermissions));
+    mockUseValidatePermissions.mockReturnValue(allowAllPermissions);
     mockUseCourseAuthoringFlag.mockReturnValue({
       isCourseAuthoringEnabled: true,
       isCourseEnabled: () => true,
@@ -178,7 +156,6 @@ describe('AssignRoleWizardPage', () => {
     it('shows the roles for every allowed scope type, in catalog order', async () => {
       setupMocks();
       renderPage();
-      await waitForCatalog();
       allRoles.forEach((role) => {
         expect(screen.getByText(role)).toBeInTheDocument();
       });
@@ -188,19 +165,17 @@ describe('AssignRoleWizardPage', () => {
     it('orders the roles of each scope type from most to fewest permissions', async () => {
       setupMocks();
       renderPage();
-      await waitForCatalog();
       const roleNames = Array.from(document.querySelectorAll('.role-name')).map(({ textContent }) => textContent);
       expect(roleNames.filter((name) => name?.startsWith('Library'))).toEqual(libraryRoles);
     });
 
     it.each(scopeRoles)('shows only the roles for the allowed scope type %#', async ({ action, roles }) => {
-      mockUseValidatePermissions.mockImplementation(mockPermissions({
+      mockUseValidatePermissions.mockReturnValue({
         data: scopeRoles.map((scope) => ({ action: scope.action, allowed: scope.action === action })),
         isLoading: false,
-      }));
+      });
       setupMocks();
       renderPage();
-      await waitForCatalog();
 
       roles.forEach((role) => {
         expect(screen.getByText(role)).toBeInTheDocument();
@@ -213,24 +188,22 @@ describe('AssignRoleWizardPage', () => {
     });
 
     it('shows no roles when no scope type is allowed', async () => {
-      mockUseValidatePermissions.mockImplementation(mockPermissions({
+      mockUseValidatePermissions.mockReturnValue({
         data: scopeRoles.map(({ action }) => ({ action, allowed: false })),
         isLoading: false,
-      }));
+      });
       setupMocks();
       renderPage();
-      await waitForCatalog();
       expect(screen.queryByRole('radio')).not.toBeInTheDocument();
     });
 
     it('ignores allowed permissions whose action is not a known role scope', async () => {
-      mockUseValidatePermissions.mockImplementation(mockPermissions({
+      mockUseValidatePermissions.mockReturnValue({
         data: [{ action: 'some.unrelated.permission', allowed: true }],
         isLoading: false,
-      }));
+      });
       setupMocks();
       renderPage();
-      await waitForCatalog();
       expect(screen.queryByRole('radio')).not.toBeInTheDocument();
     });
 
@@ -242,7 +215,6 @@ describe('AssignRoleWizardPage', () => {
       });
       setupMocks();
       renderPage();
-      await waitForCatalog();
       courseRoles.forEach((role) => {
         expect(screen.queryByText(role)).not.toBeInTheDocument();
       });

@@ -35,9 +35,8 @@ const mockState = {
   ],
 };
 
-jest.mock('@openedx/frontend-base', () => ({
-  ...jest.requireActual('@openedx/frontend-base'),
-  getAuthenticatedHttpClient: jest.fn(),
+jest.mock('@src/authz-module/catalog/data/hooks', () => ({
+  useAuthzCatalog: jest.fn(),
 }));
 
 jest.mock('@src/authz-module/hooks/useCourseAuthoringFlag', () => ({
@@ -57,8 +56,8 @@ jest.mock('@src/authz-module/data/hooks', () => ({
   useScopes: () => ({ data: { results: [] } }),
 }));
 
-// RolesFilter validates view-team permissions to decide which role groups to show.
-// Grant both so the full course/library role set renders for these wiring tests.
+// ScopesFilter and OrgFilter read the view-team permissions to decide what to show.
+// Grant both so the full course/library filters render for these wiring tests.
 jest.mock('@src/data/hooks', () => {
   const { CONTENT_COURSE_PERMISSIONS, CONTENT_LIBRARY_PERMISSIONS } = jest.requireActual('@src/authz-module/roles-permissions');
   return {
