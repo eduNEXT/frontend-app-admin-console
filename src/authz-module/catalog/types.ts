@@ -21,6 +21,7 @@ export interface Role {
   icon: string | null;
   definitionKind: 'static' | 'user_defined';
   permissions: string[];
+  scopeTypes: string[];
 }
 
 export interface AuthzCatalog {

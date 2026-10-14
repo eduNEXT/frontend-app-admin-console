@@ -6,7 +6,7 @@ import { renderWrapper } from '@src/testUtils';
 import PermissionTable from './PermissionTable';
 
 const buildRole = (role: string, displayName: string): Role => ({
-  role, displayName, description: '', icon: null, definitionKind: 'static', permissions: [],
+  role, displayName, description: '', icon: null, definitionKind: 'static', permissions: [], scopeTypes: ['lib'],
 });
 
 const buildCategory = (id: string, displayName: string, description = ''): Category => ({

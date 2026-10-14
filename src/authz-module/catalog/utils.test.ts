@@ -12,8 +12,8 @@ const buildPermission = (id: string, categoryId: string, scopeTypes: string[]): 
   id, displayName: id, description: '', icon: null, categoryId, scopeTypes,
 });
 
-const buildRole = (role: string, permissions: string[], displayName = role): Role => ({
-  role, displayName, description: '', icon: null, definitionKind: 'static', permissions,
+const buildRole = (role: string, permissions: string[], scopeTypes: string[], displayName = role): Role => ({
+  role, displayName, description: '', icon: null, definitionKind: 'static', permissions, scopeTypes,
 });
 
 const catalog: AuthzCatalog = {
@@ -26,10 +26,14 @@ const catalog: AuthzCatalog = {
     buildPermission('team.view_team', 'team', [SCOPE_TYPES.COURSE, SCOPE_TYPES.LIBRARY]),
   ],
   roles: [
-    buildRole('course_staff', ['courses.view_course']),
-    buildRole('course_admin', ['courses.view_course', 'courses.edit_course_content']),
-    buildRole('library_user', ['content_libraries.view_library']),
-    buildRole('team_viewer', ['team.view_team', 'content_libraries.view_library']),
+    buildRole('course_staff', ['courses.view_course'], [SCOPE_TYPES.COURSE]),
+    buildRole('course_admin', ['courses.view_course', 'courses.edit_course_content'], [SCOPE_TYPES.COURSE]),
+    buildRole('library_user', ['content_libraries.view_library'], [SCOPE_TYPES.LIBRARY]),
+    buildRole(
+      'team_viewer',
+      ['team.view_team', 'content_libraries.view_library'],
+      [SCOPE_TYPES.COURSE, SCOPE_TYPES.LIBRARY],
+    ),
   ],
 };
 
@@ -48,11 +52,18 @@ describe('getScopeCatalog', () => {
     expect(categories.map(({ id }) => id)).toEqual(['library', 'team']);
   });
 
-  it('leaves out the roles without permissions in the scope type', () => {
+  it('leaves out the roles without grants in the scope type', () => {
     const { roles } = getScopeCatalog(catalog, SCOPE_TYPES.LIBRARY);
 
     expect(roleNames(roles)).not.toContain('course_staff');
     expect(roleNames(roles)).not.toContain('course_admin');
+  });
+
+  it('leaves out a role granting a permission of several scope types only in another one', () => {
+    const courseTeamViewer = buildRole('course_team_viewer', ['team.view_team'], [SCOPE_TYPES.COURSE]);
+    const { roles } = getScopeCatalog({ ...catalog, roles: [courseTeamViewer] }, SCOPE_TYPES.LIBRARY);
+
+    expect(roleNames(roles)).toEqual([]);
   });
 
   it('lists a role spanning several scope types in each, with only that scope type permissions', () => {
@@ -73,9 +84,9 @@ describe('getScopeCatalog', () => {
 describe('sortRolesByPermissionCount', () => {
   it('keeps the catalog order of roles with the same number of permissions', () => {
     const roles = [
-      buildRole('b', ['one'], 'Bravo'),
-      buildRole('c', ['one', 'two'], 'Charlie'),
-      buildRole('a', ['one'], 'Alpha'),
+      buildRole('b', ['one'], [SCOPE_TYPES.COURSE], 'Bravo'),
+      buildRole('c', ['one', 'two'], [SCOPE_TYPES.COURSE], 'Charlie'),
+      buildRole('a', ['one'], [SCOPE_TYPES.COURSE], 'Alpha'),
     ];
 
     expect(roleNames(sortRolesByPermissionCount(roles))).toEqual(['c', 'b', 'a']);

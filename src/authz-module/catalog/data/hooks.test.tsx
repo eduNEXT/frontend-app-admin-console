@@ -18,8 +18,8 @@ const buildPermission = (id: string, scopeType: string) => ({
   id, display_name: id, description: '', icon: null, category_id: null, scope_types: [scopeType],
 });
 
-const buildRole = (role: string, permissions: string[]) => ({
-  role, display_name: role, description: '', icon: null, definition_kind: 'static', permissions,
+const buildRole = (role: string, permissions: string[], scopeType: string) => ({
+  role, display_name: role, description: '', icon: null, definition_kind: 'static', permissions, scope_types: [scopeType],
 });
 
 // Answers validate/me with the given view-team permissions, and the catalog endpoint with a
@@ -43,8 +43,8 @@ const mockApi = ({ course = false, library = false, isPermissionsPending = false
         buildPermission('content_libraries.view_library', SCOPE_TYPES.LIBRARY),
       ],
       results: [
-        buildRole('course_admin', ['courses.view_course']),
-        buildRole('library_admin', ['content_libraries.view_library']),
+        buildRole('course_admin', ['courses.view_course'], SCOPE_TYPES.COURSE),
+        buildRole('library_admin', ['content_libraries.view_library'], SCOPE_TYPES.LIBRARY),
       ],
     },
   }));
@@ -132,7 +132,7 @@ describe('useAuthzCatalog', () => {
           categories: [],
           permissions: [],
           results: [{
-            role: `role_page_${page}`, display_name: '', description: '', icon: null, definition_kind: 'static', permissions: [],
+            role: `role_page_${page}`, display_name: '', description: '', icon: null, definition_kind: 'static', permissions: [], scope_types: [SCOPE_TYPES.LIBRARY],
           }],
         },
       });

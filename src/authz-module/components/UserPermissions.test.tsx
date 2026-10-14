@@ -45,7 +45,7 @@ describe('UserPermissions', () => {
         ],
         roles: [buildCatalogRole('team_viewer', 'Team Viewer', [
           'courses.view_course_team', 'content_libraries.view_library_team',
-        ])],
+        ], [SCOPE_TYPES.COURSE, SCOPE_TYPES.LIBRARY])],
       },
     });
 
@@ -82,7 +82,12 @@ describe('UserPermissions', () => {
         scopeTypes: [SCOPE_TYPES.COURSE],
         categories: categoryIds.map((id) => buildCatalogCategory(id)),
         permissions: categoryIds.map((id) => buildCatalogPermission(`courses.${id}`, id, SCOPE_TYPES.COURSE)),
-        roles: [buildCatalogRole('course_admin', 'Course Admin', categoryIds.map((id) => `courses.${id}`))],
+        roles: [buildCatalogRole(
+          'course_admin',
+          'Course Admin',
+          categoryIds.map((id) => `courses.${id}`),
+          [SCOPE_TYPES.COURSE],
+        )],
       },
     });
 

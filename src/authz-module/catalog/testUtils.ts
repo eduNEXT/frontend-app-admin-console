@@ -19,8 +19,13 @@ export const buildCatalogPermission = (id: string, categoryId: string | null, sc
   id, displayName: id, description: '', icon: null, categoryId, scopeTypes: [scopeType],
 });
 
-export const buildCatalogRole = (role: string, displayName: string, permissions: string[]): Role => ({
-  role, displayName, description: '', icon: null, definitionKind: 'static', permissions,
+export const buildCatalogRole = (
+  role: string,
+  displayName: string,
+  permissions: string[],
+  scopeTypes: string[],
+): Role => ({
+  role, displayName, description: '', icon: null, definitionKind: 'static', permissions, scopeTypes,
 });
 
 /** A catalog with the course and library roles. */
@@ -41,18 +46,20 @@ export const authzCatalog: AuthzCatalog = {
   roles: [
     buildCatalogRole('course_admin', 'Course Admin', [
       'courses.edit_course_content', 'courses.manage_course_team', 'courses.view_course',
-    ]),
-    buildCatalogRole('course_staff', 'Course Staff', ['courses.edit_course_content', 'courses.view_course']),
+    ], [SCOPE_TYPES.COURSE]),
+    buildCatalogRole('course_staff', 'Course Staff', [
+      'courses.edit_course_content', 'courses.view_course',
+    ], [SCOPE_TYPES.COURSE]),
     buildCatalogRole('library_admin', 'Library Admin', [
       'content_libraries.edit_library_content', 'content_libraries.manage_library_team', 'content_libraries.view_library',
-    ]),
+    ], [SCOPE_TYPES.LIBRARY]),
     buildCatalogRole('library_author', 'Library Author', [
       'content_libraries.edit_library_content', 'content_libraries.view_library',
-    ]),
+    ], [SCOPE_TYPES.LIBRARY]),
     buildCatalogRole('library_contributor', 'Library Contributor', [
       'content_libraries.edit_library_content', 'content_libraries.view_library',
-    ]),
-    buildCatalogRole('library_user', 'Library User', ['content_libraries.view_library']),
+    ], [SCOPE_TYPES.LIBRARY]),
+    buildCatalogRole('library_user', 'Library User', ['content_libraries.view_library'], [SCOPE_TYPES.LIBRARY]),
   ],
 };
 

@@ -12,7 +12,7 @@ const buildPermission = (id: string, categoryId: string | null): Permission => (
 });
 
 const buildRole = (role: string, permissions: string[]): Role => ({
-  role, displayName: role, description: '', icon: null, definitionKind: 'static', permissions,
+  role, displayName: role, description: '', icon: null, definitionKind: 'static', permissions, scopeTypes: ['lib'],
 });
 
 const otherCategory = buildCategory('other');

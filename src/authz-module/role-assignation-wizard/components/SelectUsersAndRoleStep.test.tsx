@@ -5,18 +5,18 @@ import type { Role } from '@src/authz-module/catalog';
 import { renderWrapper } from '@src/testUtils';
 import SelectUsersAndRoleStep from './SelectUsersAndRoleStep';
 
-const buildRole = (role: string, displayName: string, description = ''): Role => ({
-  role, displayName, description, icon: null, definitionKind: 'static', permissions: [],
+const buildRole = (role: string, displayName: string, scopeTypes: string[], description = ''): Role => ({
+  role, displayName, description, icon: null, definitionKind: 'static', permissions: [], scopeTypes,
 });
 
 const courseGroup = {
   scopeType: SCOPE_TYPES.COURSE,
-  roles: [buildRole('course_admin', 'Course Admin', 'Can manage the course team.')],
+  roles: [buildRole('course_admin', 'Course Admin', [SCOPE_TYPES.COURSE], 'Can manage the course team.')],
 };
 
 const libraryGroup = {
   scopeType: SCOPE_TYPES.LIBRARY,
-  roles: [buildRole('library_admin', 'Library Admin', 'Can manage the library.')],
+  roles: [buildRole('library_admin', 'Library Admin', [SCOPE_TYPES.LIBRARY], 'Can manage the library.')],
 };
 
 const defaultProps = {
@@ -96,7 +96,7 @@ describe('SelectUsersAndRoleStep', () => {
   });
 
   it('selects a role offered in several scope types only in the selected one', () => {
-    const teamViewer = buildRole('team_viewer', 'Team Viewer');
+    const teamViewer = buildRole('team_viewer', 'Team Viewer', [SCOPE_TYPES.COURSE, SCOPE_TYPES.LIBRARY]);
     renderWrapper(
       <SelectUsersAndRoleStep
         {...defaultProps}

@@ -11,13 +11,13 @@ import { SCOPE_TYPES } from '@src/authz-module/catalog';
 import type { Role } from '@src/authz-module/catalog';
 import AssignRoleWizard from './AssignRoleWizard';
 
-const buildRole = (role: string, displayName: string): Role => ({
-  role, displayName, description: '', icon: null, definitionKind: 'static', permissions: [],
+const buildRole = (role: string, displayName: string, scopeTypes: string[]): Role => ({
+  role, displayName, description: '', icon: null, definitionKind: 'static', permissions: [], scopeTypes,
 });
 
 const roleGroups = [
-  { scopeType: SCOPE_TYPES.COURSE, roles: [buildRole('course_admin', 'Course Admin')] },
-  { scopeType: SCOPE_TYPES.LIBRARY, roles: [buildRole('library_admin', 'Library Admin')] },
+  { scopeType: SCOPE_TYPES.COURSE, roles: [buildRole('course_admin', 'Course Admin', [SCOPE_TYPES.COURSE])] },
+  { scopeType: SCOPE_TYPES.LIBRARY, roles: [buildRole('library_admin', 'Library Admin', [SCOPE_TYPES.LIBRARY])] },
 ];
 
 jest.mock('@openedx/frontend-base', () => ({
