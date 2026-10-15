@@ -7,7 +7,7 @@ import {
 } from '@openedx/paragon';
 
 import { useToastManager } from '@src/components/ToastManager/ToastManagerContext';
-import { LIBRARY_ROLE_KEYS } from '@src/authz-module/roles-permissions';
+import { SCOPE_TYPES, useAuthzCatalog } from '@src/authz-module/catalog';
 import { useViewTeamPermissions } from '@src/authz-module/hooks/useViewTeamPermissions';
 import { useQuerySettings } from '@src/authz-module/hooks/useQuerySettings';
 import OrgFilter from '@src/authz-module/components/TableControlBar/OrgFilter';
@@ -68,11 +68,13 @@ const TeamMembersTable = ({ presetScope }: TeamMembersTableProps) => {
   const { querySettings, handleTableFetch } = useQuerySettings(initialQuerySettings);
 
   const { isCourseViewAllowed } = useViewTeamPermissions();
+  const { getScopeCatalog } = useAuthzCatalog();
+  const libraryRoleIds = getScopeCatalog(SCOPE_TYPES.LIBRARY)?.roles.map(({ role }) => role).join(',') ?? null;
 
   const effectiveQuerySettings = useMemo(() => {
     if (isCourseViewAllowed || querySettings.roles) return querySettings;
-    return { ...querySettings, roles: LIBRARY_ROLE_KEYS };
-  }, [isCourseViewAllowed, querySettings]);
+    return { ...querySettings, roles: libraryRoleIds };
+  }, [isCourseViewAllowed, libraryRoleIds, querySettings]);
 
   const {
     data: { results: teamMembers, count } = EMPTY_ASSIGNMENTS,
