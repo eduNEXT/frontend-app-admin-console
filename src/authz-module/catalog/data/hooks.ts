@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { appId } from '@src/constants';
 import { useValidateUserPermissionsNonSuspense } from '@src/data/hooks';
 import { getAuthzCatalog } from './api';
-import { SCOPE_TYPES, VIEW_TEAM_ACTIONS } from '../constants';
+import { SCOPE_TYPES, VIEW_TEAM_ACTIONS, VIEW_TEAM_PERMISSIONS } from '../constants';
 import type { AuthzCatalog, ScopeCatalog } from '../types';
 import { getScopeCatalog } from '../utils';
 
@@ -13,12 +13,6 @@ const catalogQueryKeys = {
 };
 
 const NO_SCOPE_TYPES: string[] = [];
-
-// Requested in the same order as useViewTeamPermissions (libraries first), so both share one
-// validate/me query.
-const VIEW_TEAM_PERMISSIONS = [SCOPE_TYPES.LIBRARY, SCOPE_TYPES.COURSE].map((scopeType) => ({
-  action: VIEW_TEAM_ACTIONS[scopeType],
-}));
 
 /**
  * React Query hook to fetch the roles, permissions and categories catalog of the scope types the

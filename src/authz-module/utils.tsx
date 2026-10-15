@@ -2,7 +2,7 @@ import { Icon } from '@openedx/paragon';
 import { FilterList } from '@openedx/paragon/icons';
 import { RESOURCE_ICONS } from './components/constants';
 import { CONTEXT_TYPES, getScopeContextType } from './constants';
-import { CONTENT_COURSE_PERMISSIONS, CONTENT_LIBRARY_PERMISSIONS } from './roles-permissions';
+import { MANAGE_TEAM_ACTIONS, SCOPE_TYPES } from './catalog';
 
 /**
  * Returns a header value for a DataTable column that shows a filter icon
@@ -43,8 +43,8 @@ export const getScopeResourceIcon = (scope: string) => (
 /** Unrecognised scopes fall back to the course permission, as `getScopeContextType` does. */
 export const getScopeManageAction = (scope: string) => (
   getScopeContextType(scope) === CONTEXT_TYPES.LIBRARY
-    ? CONTENT_LIBRARY_PERMISSIONS.MANAGE_LIBRARY_TEAM
-    : CONTENT_COURSE_PERMISSIONS.MANAGE_COURSE_TEAM
+    ? MANAGE_TEAM_ACTIONS[SCOPE_TYPES.LIBRARY]
+    : MANAGE_TEAM_ACTIONS[SCOPE_TYPES.COURSE]
 );
 
 export const getScopeManageActionPermission = (scope: string) => {
