@@ -37,7 +37,7 @@ const catalog: AuthzCatalog = {
   ],
 };
 
-const roleNames = (roles: Role[]) => roles.map(({ role }) => role);
+const roleIds = (roles: Role[]) => roles.map(({ role }) => role);
 
 describe('getScopeCatalog', () => {
   it('keeps only the permissions granted in the scope type', () => {
@@ -55,15 +55,15 @@ describe('getScopeCatalog', () => {
   it('leaves out the roles without grants in the scope type', () => {
     const { roles } = getScopeCatalog(catalog, SCOPE_TYPES.LIBRARY);
 
-    expect(roleNames(roles)).not.toContain('course_staff');
-    expect(roleNames(roles)).not.toContain('course_admin');
+    expect(roleIds(roles)).not.toContain('course_staff');
+    expect(roleIds(roles)).not.toContain('course_admin');
   });
 
   it('leaves out a role granting a permission of several scope types only in another one', () => {
     const courseTeamViewer = buildRole('course_team_viewer', ['team.view_team'], [SCOPE_TYPES.COURSE]);
     const { roles } = getScopeCatalog({ ...catalog, roles: [courseTeamViewer] }, SCOPE_TYPES.LIBRARY);
 
-    expect(roleNames(roles)).toEqual([]);
+    expect(roleIds(roles)).toEqual([]);
   });
 
   it('lists a role spanning several scope types in each, with only that scope type permissions', () => {
@@ -77,7 +77,7 @@ describe('getScopeCatalog', () => {
   it('orders the roles from most to fewest permissions in the scope type', () => {
     const { roles } = getScopeCatalog(catalog, SCOPE_TYPES.COURSE);
 
-    expect(roleNames(roles)).toEqual(['course_admin', 'course_staff', 'team_viewer']);
+    expect(roleIds(roles)).toEqual(['course_admin', 'course_staff', 'team_viewer']);
   });
 });
 
@@ -89,6 +89,6 @@ describe('sortRolesByPermissionCount', () => {
       buildRole('a', ['one'], [SCOPE_TYPES.COURSE], 'Alpha'),
     ];
 
-    expect(roleNames(sortRolesByPermissionCount(roles))).toEqual(['c', 'b', 'a']);
+    expect(roleIds(sortRolesByPermissionCount(roles))).toEqual(['c', 'b', 'a']);
   });
 });
